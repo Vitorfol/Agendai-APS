@@ -1,0 +1,12 @@
+services:
+  database:
+    image: mysql:8.4
+    restart: always
+    container_name: agendai-db
+    environment:
+      MYSQL_DATABASE: agendai
+      MYSQL_ROOT_PASSWORD: 'admin123'
+    ports:
+      - '3307:3306'
+    volumes:
+      - ./data/db:/var/lib/mysql
