@@ -1,0 +1,5 @@
+.env
+src/database/.ipynb_checkpoints
+Dockerfile
+.dockerignore
+data
