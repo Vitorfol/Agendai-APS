@@ -1,161 +1,162 @@
 import sqlalchemy as db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm  import declarative_base
+
+# Configuração do Banco de Dados (SQLite para teste)
+
 Base = declarative_base()
+
+# --- DEFINIÇÃO DAS CLASSES (Com correções nos relacionamentos) ---
 
 class Universidade(Base):
     __tablename__ = "Universidade"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
     sigla = db.Column(db.String(20))
     cnpj = db.Column(db.String(14))
     email = db.Column(db.String(255))
 
-    cursos = relationship("Curso", back_populates = "Universidade")
-    professores = relationship("Professor", back_populates = "Universidade")
-    evento = relationship("Evento", back_populates = "Universidade")
+    cursos = relationship("Curso", back_populates="universidade")
+    professores = relationship("Professor", back_populates="universidade")
+    evento = relationship("Evento", back_populates="universidade")
 
 
 class Curso(Base):
     __tablename__ = "Curso"
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
     sigla = db.Column(db.String(10))
     email = db.Column(db.String(255))
 
-    universidade = relationship("Universidade", back_populates = "Curso")
-    alunos = relationship("Aluno", back_populates = "Curso")
-    CursoDisciplina = relationship("CursoDisciplina", back_populates = "Curso")
+    universidade = relationship("Universidade", back_populates="cursos")
+    alunos = relationship("Aluno", back_populates="curso")
+    cursoDisciplina = relationship("CursoDisciplina", back_populates="curso")
 
 
-class Usuário(Base):
+class Usuario(Base):
     __tablename__ = "Usuário"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
     email = db.Column(db.String(255))
     cpf = db.Column(db.String(11))
 
-    aluno = relationship("Aluno", back_populates = "Usuário")
-    professor = relationship("Professor", back_populates = "Usuário")    
-    notificação = relationship("Notificação", back_populates = "Usuário")
-    convidado = relationship("Convidado", back_populates = "Usuário")
-    evento = relationship("Evento", back_populates= "Usuário")
+    aluno = relationship("Aluno", back_populates="usuario", uselist=False)
+    professor = relationship("Professor", back_populates="usuario", uselist=False)
+    notificacao = relationship("Notificacao", back_populates="usuario")
+    convidado = relationship("Convidado", back_populates="usuario")
+    evento = relationship("Evento", back_populates="usuario")
+
 
 class Aluno(Base):
     __tablename__ = "Aluno"
-    idUsuário = db.Column(db.Integer, ForeignKey("Usuário.id"), primary_key = True)
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
     idCurso = db.Column(db.Integer, ForeignKey("Curso.id"))
-    mátricula = db.Column(db.String(7))
+    matricula = db.Column("mátricula", db.String(7))
 
-    usuário = relationship("Usuário", back_populates = "Aluno")
-    curso = relationship("Curso", back_populates = "Aluno")
-    presenca = relationship("Presença", back_populates= "Aluno")
+    usuario = relationship("Usuario", back_populates="aluno")
+    curso = relationship("Curso", back_populates="alunos")
+    presenca = relationship("Presenca", back_populates="aluno")
 
-    
+
 class Professor(Base):
     __tablename__ = "Professor"
-    idUsuário = db.Column(db.Integer, ForeignKey("Usuário.id"), primary_key = True)
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
-    dataAdmissão = db.Column(db.Date)
+    dataAdmissao = db.Column("dataAdmissão", db.Date)
 
-    usuário = relationship("Usuário", back_populates = "Professor")
-    universidade = relationship("Universidade", back_populates = "Professor")
-    disciplina = relationship("Professor", back_populates = "Disciplina")  
+    usuario = relationship("Usuario", back_populates="professor")
+    universidade = relationship("Universidade", back_populates="professores")
+    disciplina = relationship("Disciplina", back_populates="professor")
 
-class Notificação(Base):
+
+class Notificacao(Base):
     __tablename__ = "Notificação"
-    idUsuário = db.Column(db.Integer, ForeignKey("Usuário.id"))
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     data = db.Column(db.DateTime)
     evento = db.Column(db.String(255))
 
-    usuário = relationship("Usuário", back_populates = "Notificação")
+    usuario = relationship("Usuario", back_populates="notificacao")
 
 
 class Evento(Base):
     __tablename__ = "Evento"
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     dataInicio = db.Column(db.DateTime)
     dataTermino = db.Column(db.DateTime)
     recorrente = db.Column(db.Boolean)
     categoria = db.Column(db.String(255))
-    idproprietário = db.Column(db.Integer, ForeignKey("Usuário.id"))
+    idProprietario = db.Column("idproprietário", db.Integer, ForeignKey("Usuário.id"))
 
-
-    usuario = relationship("Usuário", back_populates= "Evento")
-    universidade = relationship("Universidade", back_populates = "Evento")
-    ocorrenciaEvento = relationship("OcorrênciaEvento", back_populates= "Evento")
-    disciplina = relationship("Disciplina", back_populates = "Evento")
-    convidado = relationship("Convidado", back_populates= "Evento")
+    usuario = relationship("Usuario", back_populates="evento")
+    universidade = relationship("Universidade", back_populates="evento")
+    ocorrenciaEvento = relationship("OcorrenciaEvento", back_populates="evento")
+    disciplina = relationship("Disciplina", back_populates="evento", uselist=False)
+    convidado = relationship("Convidado", back_populates="evento")
 
 
 class Disciplina(Base):
     __tablename__ = "Disciplina"
-    idEvento = db.Column(db.Integer, ForeignKey("Evento.id"), primary_key = True)
+    idEvento = db.Column(db.Integer, ForeignKey("Evento.id"), primary_key=True)
     idProfessor = db.Column(db.Integer, ForeignKey("Professor.idUsuário"))
     horario = db.Column(db.String(10))
-    nome = db.Column(db.String(255)) 
+    nome = db.Column(db.String(255))
 
-    evento = relationship("Evento", back_populates = "Disciplina")
-    professor = relationship("Professor", back_populates = "Disciplina")    
-    disciplina = relationship("Disciplina", back_populates = "dDisciplina")  
-    cursoDisciplina = relationship("CursoDisciplina", back_populates = "Disciplina") 
+    evento = relationship("Evento", back_populates="disciplina")
+    professor = relationship("Professor", back_populates="disciplina")
+    dDisciplinaDias = relationship("dDisciplina_dias", back_populates="disciplina")
+    cursoDisciplina = relationship("CursoDisciplina", back_populates="disciplina")
+
 
 class dDisciplina_dias(Base):
     __tablename__ = "dDisciplina"
-    idDisciplina = db.Column(db.Integer, ForeignKey("Disciplina.idEvento"), primary_key = True)
-    dia = db.Column(db.String(10))
+    idDisciplina = db.Column(db.Integer, ForeignKey("Disciplina.idEvento"), primary_key=True)
+    dia = db.Column(db.String(10), primary_key=True) # Adicionado PK composta para evitar erro
 
-    disciplina = relationship("dDisciplina", back_populates = "Disciplina")  
+    disciplina = relationship("Disciplina", back_populates="dDisciplinaDias")
 
 
 class CursoDisciplina(Base):
     __tablename__ = "CursoDisciplina"
     idCurso = db.Column(db.Integer, ForeignKey("Curso.id"))
     idDisciplina = db.Column(db.Integer, ForeignKey("Disciplina.idEvento"))
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     creditos = db.Column(db.Integer)
 
-    curso = relationship("Curso", back_populates = "CursoDisciplina")
-    disciplina = relationship("Disciplina", back_populates = "CursoDisciplina") 
+    curso = relationship("Curso", back_populates="cursoDisciplina")
+    disciplina = relationship("Disciplina", back_populates="cursoDisciplina")
 
 
 class OcorrenciaEvento(Base):
     __tablename__ = "OcorrênciaEvento"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     idEvento = db.Column(db.Integer, ForeignKey("Evento.id"))
     local = db.Column(db.String(255))
     data = db.Column(db.DateTime)
 
-    evento = relationship("Evento", back_populates= "OcorrenciaEvento")
-    presenca = relationship("Presença", back_populates= "OcorrenciaEvento")
+    evento = relationship("Evento", back_populates="ocorrenciaEvento")
+    presenca = relationship("Presenca", back_populates="ocorrenciaEvento")
+
 
 class Convidado(Base):
     __tablename__ = "Convidado"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     idEvento = db.Column(db.Integer, ForeignKey("Evento.id"))
-    idUsuário = db.Column(db.Integer, ForeignKey("Usuário.id"))
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"))
     statusVinculo = db.Column(db.String(255))
 
-    evento = relationship("Evento", back_populates= "Convidado")
-    usuário = relationship("Usuário", back_populates = "Convidado")
+    evento = relationship("Evento", back_populates="convidado")
+    usuario = relationship("Usuario", back_populates="convidado")
 
 
-class Presença(Base):
+class Presenca(Base):
     __tablename__ = "Presença"
-    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-    idOcorrênciaEvento = db.Column(db.Integer, ForeignKey("OcorrênciaEvento.id"))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    idOcorrenciaEvento = db.Column("idOcorrênciaEvento", db.Integer, ForeignKey("OcorrênciaEvento.id"))
     idAluno = db.Column(db.Integer, ForeignKey("Aluno.idUsuário"))
     presente = db.Column(db.Boolean)
 
-    ocorrenciaEvento = relationship("OcorrenciaEvento", back_populates= "Presença")
-    aluno = relationship("Aluno", back_populates= "Presença")
-
-
-
-
-    
-    
+    ocorrenciaEvento = relationship("OcorrenciaEvento", back_populates="presenca")
+    aluno = relationship("Aluno", back_populates="presenca")

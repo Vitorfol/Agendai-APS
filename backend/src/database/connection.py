@@ -1,6 +1,12 @@
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker
-from ..models.models import Base
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+sys.path.append(project_root)
+from src.models.models import Base
+
 
 user = "root"
 senha = "admin123"
@@ -15,15 +21,14 @@ metadata = Base.metadata
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # 4. Criar as tabelas no DB (se ainda não existirem)
-def create_tables():
-    Base.metadata.create_all(bind=engine)
+class Conn():
+    def create_tables(self):
+        Base.metadata.create_all(bind=engine)
 
 # 5. Criar uma função utilitária para obter a sessão (boa prática em Flask/FastAPI)
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-create_tables()
+    def get_db(self):
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
