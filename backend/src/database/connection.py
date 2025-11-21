@@ -10,7 +10,7 @@ from src.models.models import Base
 
 user = "root"
 senha = "admin123"
-connect_string = f"mysql+mysqlconnector://{user}:{senha}@localhost:3307/agendai"
+connect_string = f"mysql+pymysql://{user}:{senha}@db:3306/agendai"
 engine = db.create_engine(connect_string, echo = True)
 conn = engine.connect()
 Session = sessionmaker(bind=engine)

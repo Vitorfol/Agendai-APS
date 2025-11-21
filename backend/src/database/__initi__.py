@@ -1,5 +1,5 @@
-from connection import conn
+from connection import Conn
 
 if __name__ == '__main__':
-    con = conn()
+    con = Conn()
     con.create_tables()
