@@ -28,7 +28,5 @@ class Conn():
 # 5. Criar uma função utilitária para obter a sessão (boa prática em Flask/FastAPI)
     def get_db(self):
         db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
+        return db
+
