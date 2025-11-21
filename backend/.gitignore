@@ -1,6 +1,5 @@
 .env
 src/database/.ipynb_checkpoints
-Dockerfile
 data
 __pycache__
 
