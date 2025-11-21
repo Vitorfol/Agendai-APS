@@ -15,18 +15,7 @@ engine = db.create_engine(connect_string, echo = True)
 conn = engine.connect()
 Session = sessionmaker(bind=engine)
 session = Session()
-
-metadata = Base.metadata
-
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 4. Criar as tabelas no DB (se ainda não existirem)
-class Conn():
-    def create_tables(self):
-        Base.metadata.create_all(bind=engine)
 
-# 5. Criar uma função utilitária para obter a sessão (boa prática em Flask/FastAPI)
-    def get_db(self):
-        db = SessionLocal()
-        return db
 
