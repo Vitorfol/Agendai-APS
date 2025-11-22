@@ -6,15 +6,18 @@ from sqlalchemy import ForeignKey
 
 Base = declarative_base()
 
-# --- DEFINIÇÃO DAS CLASSES (Com correções nos relacionamentos) ---
+# --- DEFINIÇÃO DAS CLASSES ---
 
 class Universidade(Base):
     __tablename__ = "Universidade"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    # primary_key já garante unicidade automaticamente
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True) 
     nome = db.Column(db.String(255))
     sigla = db.Column(db.String(20))
-    cnpj = db.Column(db.String(14))
-    email = db.Column(db.String(255))
+    
+    # ADICIONADO unique=True
+    cnpj = db.Column(db.String(14), unique=True) 
+    email = db.Column(db.String(255), unique=True) 
 
     cursos = relationship("Curso", back_populates="universidade")
     professores = relationship("Professor", back_populates="universidade")
@@ -27,7 +30,9 @@ class Curso(Base):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
     sigla = db.Column(db.String(10))
-    email = db.Column(db.String(255))
+    
+    # ADICIONADO unique=True (Assumindo que email do curso não repete)
+    email = db.Column(db.String(255), unique=True)
 
     universidade = relationship("Universidade", back_populates="cursos")
     alunos = relationship("Aluno", back_populates="curso")
@@ -38,8 +43,10 @@ class Usuario(Base):
     __tablename__ = "Usuário"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
-    email = db.Column(db.String(255))
-    cpf = db.Column(db.String(11))
+    
+    # ADICIONADO unique=True
+    email = db.Column(db.String(255), unique=True)
+    cpf = db.Column(db.String(11), unique=True)
 
     aluno = relationship("Aluno", back_populates="usuario", uselist=False)
     professor = relationship("Professor", back_populates="usuario", uselist=False)
@@ -50,9 +57,10 @@ class Usuario(Base):
 
 class Aluno(Base):
     __tablename__ = "Aluno"
+    # Este ID é PK e FK ao mesmo tempo, então é ÚNICO por ser PK.
     idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
     idCurso = db.Column(db.Integer, ForeignKey("Curso.id"))
-    matricula = db.Column("mátricula", db.String(7))
+    matricula = db.Column("mátricula", db.String(7)) # Dica: Geralmente matrícula também é única (unique=True)
 
     usuario = relationship("Usuario", back_populates="aluno")
     curso = relationship("Curso", back_populates="alunos")
@@ -61,6 +69,7 @@ class Aluno(Base):
 
 class Professor(Base):
     __tablename__ = "Professor"
+    # ÚNICO por ser PK
     idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
     dataAdmissao = db.Column("dataAdmissão", db.Date)
@@ -99,6 +108,7 @@ class Evento(Base):
 
 class Disciplina(Base):
     __tablename__ = "Disciplina"
+    # ÚNICO por ser PK
     idEvento = db.Column(db.Integer, ForeignKey("Evento.id"), primary_key=True)
     idProfessor = db.Column(db.Integer, ForeignKey("Professor.idUsuário"))
     horario = db.Column(db.String(10))
@@ -112,8 +122,9 @@ class Disciplina(Base):
 
 class dDisciplina_dias(Base):
     __tablename__ = "dDisciplina"
+    # PK Composta (A combinação dos dois campos deve ser única)
     idDisciplina = db.Column(db.Integer, ForeignKey("Disciplina.idEvento"), primary_key=True)
-    dia = db.Column(db.String(10), primary_key=True) # Adicionado PK composta para evitar erro
+    dia = db.Column(db.String(10), primary_key=True) 
 
     disciplina = relationship("Disciplina", back_populates="dDisciplinaDias")
 
