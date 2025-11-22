@@ -48,6 +48,8 @@ class Usuario(Base):
     email = db.Column(db.String(255), unique=True)
     cpf = db.Column(db.String(11), unique=True)
 
+    senha = db.Column(db.String(255))
+
     aluno = relationship("Aluno", back_populates="usuario", uselist=False)
     professor = relationship("Professor", back_populates="usuario", uselist=False)
     notificacao = relationship("Notificacao", back_populates="usuario")
@@ -73,6 +75,7 @@ class Professor(Base):
     idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
     dataAdmissao = db.Column("dataAdmissão", db.Date)
+    titulacao = db.Column("titulacao",db.String(255))
 
     usuario = relationship("Usuario", back_populates="professor")
     universidade = relationship("Universidade", back_populates="professores")

@@ -46,6 +46,23 @@ class UsuarioBase(BaseModel):
     email: EmailStr
     cpf: str = Field(..., min_length=11, max_length=11, description= "apenas numeros")
 
+# --- NOVO SCHEMA PARA O REGISTRO UNIFICADO ---
+class UsuarioRegistro(UsuarioBase):
+    """
+    Schema utilizado exclusivamente para o cadastro inicial.
+    Contém a senha e campos opcionais para Aluno ou Professor.
+    """
+    senha: str = Field(..., min_length=6, description="Senha de acesso")
+    
+    # Campos Específicos de Professor (Opcionais)
+    idUniversidade: Optional[int] = None
+    dataAdmissao: Optional[date] = None
+    titulacao: Optional[str] = None 
+    
+    # Campos Específicos de Aluno (Opcionais)
+    idCurso: Optional[int] = None
+    matricula: Optional[str] = None
+
 class UsuarioCreate(UsuarioBase):
     pass
 
