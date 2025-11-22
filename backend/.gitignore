@@ -3,3 +3,4 @@ src/database/.ipynb_checkpoints
 Dockerfile
 .dockerignore
 data
+src/__pycache__/

@@ -44,7 +44,7 @@ class CursoResponse(CursoBase):
 class UsuarioBase(BaseModel):
     nome: str = Field(..., max_length=255)
     email: EmailStr
-    cpf: str = Field(..., min_length=11, max_length=11)
+    cpf: str = Field(..., min_length=11, max_length=11, description= "apenas numeros")
 
 class UsuarioCreate(UsuarioBase):
     pass
@@ -95,7 +95,7 @@ class EventoBase(BaseModel):
     dataTermino: datetime
     recorrente: bool = False
     categoria: Optional[str] = None
-    idProprietario: int # ID do Usuário dono
+    idProprietario: Optional[int] = None # ID do Usuário dono
 
 class EventoCreate(EventoBase):
     pass
