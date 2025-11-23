@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 # Ajuste os imports abaixo conforme a estrutura das suas pastas
-from .. import models 
-from .. import schema
+from ..models import models 
+from ..schemas import schema
 from ..core import security # Importa seu arquivo com passlib
 
 def buscar_usuario_por_email_ou_cpf(db: Session, email: str, cpf: str):

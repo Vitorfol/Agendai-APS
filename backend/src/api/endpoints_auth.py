@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from ..database.connection import get_db 
 from ..services import service_auth 
-from .. import schema # Importa o schema.py modificado
+from ..schemas import schema # Importa o schema.py modificado
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 

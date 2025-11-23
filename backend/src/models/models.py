@@ -40,7 +40,7 @@ class Curso(Base):
 
 
 class Usuario(Base):
-    __tablename__ = "Usuário"
+    __tablename__ = "Usuario"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(255))
     
