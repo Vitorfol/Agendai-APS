@@ -13,9 +13,10 @@ def criar_evento_logica(db: Session, dados):
 
     # 2. Validação de Integridade (Opcional, mas recomendado)
     # Verificar se o proprietário existe antes de tentar criar
-    usuario = db.query(models.Usuario).filter(models.Usuario.id == dados.idProprietario).first()
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário proprietário não encontrado.")
+    if dados.idProprietario is not None:
+        usuario = db.query(models.Usuario).filter(models.Usuario.id == dados.idProprietario).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário proprietário não encontrado.")
 
     try:
         # 3. Criação do Objeto Evento
