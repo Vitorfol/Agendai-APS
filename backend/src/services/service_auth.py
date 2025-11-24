@@ -1,9 +1,12 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from .config import settings
 # Ajuste os imports abaixo conforme a estrutura das suas pastas
-from ..models import models 
-from ..schemas import schema
+from ..models import models
 from ..core import security # Importa seu arquivo com passlib
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 def buscar_usuario_por_email_ou_cpf(db: Session, email: str, cpf: str):
     return db.query(models.Usuario).filter(
@@ -98,3 +101,28 @@ def criar_aluno(db: Session, novo_usuario: models.Usuario, dados):
     except Exception as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Erro ao registrar aluno: {str(e)}")
+        
+def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
+    """Valida o token de acesso e retorna o email do usuário presente em `sub`.
+
+    Esta função NÃO consulta o banco: ela apenas valida o JWT (assinatura/expiração)
+    e extrai o campo `sub` (assumido como email). Endpoints protegidos podem usar
+    esse email para buscar o usuário no banco se necessário.
+    """
+    payload = security.decode_token(token)
+
+    if not payload or not payload.sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if payload.type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return payload.sub
