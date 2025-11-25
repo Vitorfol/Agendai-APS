@@ -8,12 +8,16 @@ project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
 sys.path.append(project_root)
 from src.models.models import *
 from connection import engine
+from src.core.security import pegar_senha_hash
 
 
 
 
 def popular_banco():
     # Cria as tabelas
+    # Garante que as tabelas do ORM existam (útil ao recriar o banco do zero)
+    Base.metadata.create_all(engine)
+
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -24,16 +28,18 @@ def popular_banco():
         nome="Universidade Federal de Tecnologia",
         sigla="UFT",
         cnpj="12345678000199",
-        email="contato@uft.edu.br"
+        email="contato@uft.edu.br",
+        senha=pegar_senha_hash("universidade123")
     )
     session.add(univ)
     session.flush() # Garante que univ.id foi gerado
 
     # 2. Criar Usuários (Base para Alunos, Professores e Admin)
-    user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111")
-    user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222")
-    user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333")
-    user_convidado = Usuario(nome="Palestrante Externo", email="guest@email.com", cpf="44444444444")
+    # Senha padrão para testes: "senha123" (hash será armazenado)
+    user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111", senha=pegar_senha_hash("senha123"))
+    user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222", senha=pegar_senha_hash("senha123"))
+    user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333", senha=pegar_senha_hash("senha123"))
+    user_convidado = Usuario(nome="Palestrante Externo", email="guest@email.com", cpf="44444444444", senha=pegar_senha_hash("senha123"))
     
     session.add_all([user_prof, user_aluno1, user_aluno2, user_convidado])
     session.flush()

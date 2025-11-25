@@ -61,7 +61,7 @@ class Usuario(Base):
 class Aluno(Base):
     __tablename__ = "Aluno"
     # Este ID é PK e FK ao mesmo tempo, então é ÚNICO por ser PK.
-    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuario.id"), primary_key=True)
     idCurso = db.Column(db.Integer, ForeignKey("Curso.id"))
     matricula = db.Column("mátricula", db.String(7)) # Dica: Geralmente matrícula também é única (unique=True)
 
@@ -73,7 +73,7 @@ class Aluno(Base):
 class Professor(Base):
     __tablename__ = "Professor"
     # ÚNICO por ser PK
-    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"), primary_key=True)
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuario.id"), primary_key=True)
     idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
     dataAdmissao = db.Column("dataAdmissão", db.Date)
     titulacao = db.Column("titulacao",db.String(255))
@@ -85,7 +85,7 @@ class Professor(Base):
 
 class Notificacao(Base):
     __tablename__ = "Notificação"
-    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"))
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuario.id"))
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     data = db.Column(db.DateTime)
     evento = db.Column(db.String(255))
@@ -101,7 +101,7 @@ class Evento(Base):
     dataTermino = db.Column(db.DateTime)
     recorrente = db.Column(db.Boolean)
     categoria = db.Column(db.String(255))
-    idProprietario = db.Column("idproprietário", db.Integer, ForeignKey("Usuário.id"))
+    idProprietario = db.Column("idproprietário", db.Integer, ForeignKey("Usuario.id"))
 
     usuario = relationship("Usuario", back_populates="evento")
     universidade = relationship("Universidade", back_populates="evento")
@@ -159,7 +159,7 @@ class Convidado(Base):
     __tablename__ = "Convidado"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     idEvento = db.Column(db.Integer, ForeignKey("Evento.id"))
-    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuário.id"))
+    idUsuario = db.Column("idUsuário", db.Integer, ForeignKey("Usuario.id"))
     statusVinculo = db.Column(db.String(255))
 
     evento = relationship("Evento", back_populates="convidado")
