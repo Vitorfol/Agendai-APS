@@ -1,8 +1,8 @@
-"""Added all tables
+"""criação
 
-Revision ID: dcdd896db864
+Revision ID: 079d67d514c6
 Revises: 
-Create Date: 2025-11-21 09:14:24.917195
+Create Date: 2025-11-25 12:39:01.179526
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'dcdd896db864'
+revision: str = '079d67d514c6'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,14 +27,19 @@ def upgrade() -> None:
     sa.Column('sigla', sa.String(length=20), nullable=True),
     sa.Column('cnpj', sa.String(length=14), nullable=True),
     sa.Column('email', sa.String(length=255), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('cnpj'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('Usuário',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('nome', sa.String(length=255), nullable=True),
     sa.Column('email', sa.String(length=255), nullable=True),
     sa.Column('cpf', sa.String(length=11), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('senha', sa.String(length=255), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('cpf'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('Curso',
     sa.Column('idUniversidade', sa.Integer(), nullable=True),
@@ -43,7 +48,8 @@ def upgrade() -> None:
     sa.Column('sigla', sa.String(length=10), nullable=True),
     sa.Column('email', sa.String(length=255), nullable=True),
     sa.ForeignKeyConstraint(['idUniversidade'], ['Universidade.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email')
     )
     op.create_table('Evento',
     sa.Column('idUniversidade', sa.Integer(), nullable=True),
@@ -69,6 +75,7 @@ def upgrade() -> None:
     sa.Column('idUsuário', sa.Integer(), nullable=False),
     sa.Column('idUniversidade', sa.Integer(), nullable=True),
     sa.Column('dataAdmissão', sa.Date(), nullable=True),
+    sa.Column('titulacao', sa.String(length=255), nullable=True),
     sa.ForeignKeyConstraint(['idUniversidade'], ['Universidade.id'], ),
     sa.ForeignKeyConstraint(['idUsuário'], ['Usuário.id'], ),
     sa.PrimaryKeyConstraint('idUsuário')
