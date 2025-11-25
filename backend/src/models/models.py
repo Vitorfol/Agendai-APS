@@ -16,7 +16,8 @@ class Universidade(Base):
     
     # ADICIONADO unique=True
     cnpj = db.Column(db.String(14), unique=True) 
-    email = db.Column(db.String(255), unique=True) 
+    email = db.Column(db.String(255), unique=True)  
+    senha = db.Column(db.String(255), nullable=True)
 
     cursos = relationship("Curso", back_populates="universidade")
     professores = relationship("Professor", back_populates="universidade")

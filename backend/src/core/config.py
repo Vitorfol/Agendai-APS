@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # API Configuration
@@ -7,11 +7,19 @@ class Settings(BaseSettings):
     
     # JWT Configuration
     ALGORITHM: str = "HS256"
-    SECRET_KEY: str 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int 
-    REFRESH_TOKEN_EXPIRE_DAYS: int 
-    
-    class Config:
-        env_file = ".env"
+    SECRET_KEY: str # Deve ser carregada do ambiente/arquivo
+    ACCESS_TOKEN_EXPIRE_MINUTES: int # Deve ser carregada
+    REFRESH_TOKEN_EXPIRE_DAYS: int # Deve ser carregada
+
+    DATABASE_USER: str 
+    DATABASE_PASSWORD: str
+    DATABASE_HOST: str
+    DATABASE_PORT: int
+    DATABASE_NAME: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env"
+        # O padrão 'extra='forbid'' está OK se todos os campos estão declarados.
+    )
         
 settings = Settings()

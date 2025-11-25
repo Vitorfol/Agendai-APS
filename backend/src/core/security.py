@@ -3,7 +3,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from .config import settings
-from ..models.jwt import TokenPayload
+from ..schemas.jwt import TokenPayload
 from fastapi import HTTPException, status
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
