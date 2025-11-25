@@ -21,3 +21,4 @@ mysql-connector-python==9.5.0
 numpy==2.3.5
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+bcrypt==4.0.1
