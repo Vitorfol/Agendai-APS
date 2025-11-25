@@ -10,6 +10,7 @@ def buscar_usuario_por_email_ou_cpf(db: Session, email: str, cpf: str):
         (models.Usuario.email == email) | (models.Usuario.cpf == cpf)
     ).first()
 
+
 def registrar_usuario_automatico(db: Session, dados):
     # 1. Verifica duplicidade
     db_user = buscar_usuario_por_email_ou_cpf(db, dados.email, dados.cpf)
