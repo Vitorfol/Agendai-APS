@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
-from .config import settings
+from ..core.config import settings
 # Ajuste os imports abaixo conforme a estrutura das suas pastas
 from ..models import models
 from ..core import security # Importa seu arquivo com passlib

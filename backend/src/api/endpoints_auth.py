@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
+from ..core.config import settings
 from ..database.connection import get_db 
 from ..services import service_auth 
 from ..schemas import schema # Importa o schema.py modificado
 
-router = APIRouter(prefix="/auth", tags=["Autenticação"])
+router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/auth", tags=["Autenticação"])
 
 @router.post("/register", 
              response_model=schema.UsuarioResponse, 
