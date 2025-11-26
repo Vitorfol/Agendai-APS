@@ -43,26 +43,18 @@ def login_user(db: Session, email: str, password: str) -> Token:
 def login_university(university: models.Universidade, password: str | None = None) -> Token:
     """Autentica (ou emite token) para uma Universidade.
 
-    Atualmente o model `Universidade` não tem campo de senha — por isso esta
-    função apenas emite tokens com `sub` = university.email. Isso deve ser
-    ajustado se for necessária autenticação (ex: adicionar credencial ou
-    buscar um usuário admin associado à universidade).
+    O model `Universidade` possui campo `senha` armazenado como hash; por isso
+    esta função requer a senha em texto plano para verificação via
+    `security.verificar_senha` e, em caso de sucesso, emite tokens com
+    `sub` = university.email.
     """
-    # Agora a Universidade tem campo `senha`. Requeremos password e validamos.
+    # Requeremos password em texto plano para verificação.
     if password is None:
         return None
 
-    # Se não houver senha cadastrada neste registro, não autenticamos.
-    if not getattr(university, 'senha', None):
+    # Verifica a senha (sempre como hash armazenado no banco).
+    if not security.verificar_senha(password, university.senha):
         return None
-
-    # If plaintext mode is enabled, compare raw; otherwise verify hash.
-    if settings.ALLOW_PLAINTEXT_PASSWORDS:
-        if university.senha != password:
-            return None
-    else:
-        if not security.verificar_senha(password, university.senha):
-            return None
 
     access_token = security.create_access_token(subject=str(university.email))
     refresh_token = security.create_refresh_token(subject=str(university.email))

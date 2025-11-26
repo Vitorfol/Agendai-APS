@@ -29,7 +29,7 @@ def insert_uece():
         "cnpj": "12345678000195",
         "email": "contato@uece.br",
         # plain password here will be hashed before saving
-        "senha": "uece123",
+        "senha": "dedelbrabo",
     }
 
     try:
