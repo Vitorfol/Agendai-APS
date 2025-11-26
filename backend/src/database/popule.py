@@ -12,6 +12,7 @@ sys.path.append(project_root)
 # Importa os modelos atualizados e a engine
 from src.models.models import *
 from connection import engine
+from src.core.security import pegar_senha_hash
 
 def popular_banco():
     # Cria a sessão
@@ -32,10 +33,11 @@ def popular_banco():
     session.flush() # Garante que univ.id foi gerado
 
     # 2. Criar Usuarios (Base para Alunos, Professores e Admin)
-    user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111")
-    user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222")
-    user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333")
-    user_convidado = Usuario(nome="Palestrante Externo", email="guest@email.com", cpf="44444444444")
+    # Adicionando senha padrão (hash) para os usuários de teste
+    user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111", senha=pegar_senha_hash("senha123"))
+    user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222", senha=pegar_senha_hash("senha123"))
+    user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333", senha=pegar_senha_hash("senha123"))
+    user_convidado = Usuario(nome="Palestrante Externo", email="guest@email.com", cpf="44444444444", senha=pegar_senha_hash("senha123"))
     
     session.add_all([user_prof, user_aluno1, user_aluno2, user_convidado])
     session.flush()

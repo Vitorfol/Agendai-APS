@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
-from sqlalchemy import ForeignKey
+import sqlalchemy as db 
 
 Base = declarative_base()
 
@@ -125,7 +125,7 @@ class Disciplina(Base):
 
     # Relationships
     evento = relationship("Evento", back_populates="disciplina")
-    professor = relationship("Professor", back_populates="disciplina")
+    professor = relationship("Professor", back_populates="disciplinas")
     disciplina_dias = relationship("DisciplinaDias", back_populates="disciplina")
     curso_disciplina = relationship("CursoDisciplina", back_populates="disciplina")
 
@@ -175,7 +175,7 @@ class Convidado(Base):
     status_vinculo = db.Column(db.String(255))
 
     # Relationships
-    evento = relationship("Evento", back_populates="convidado")
+    evento = relationship("Evento", back_populates="convidados")
     usuario = relationship("Usuario", back_populates="convidado")
 
 
@@ -189,4 +189,4 @@ class Presenca(Base):
 
     # Relationships
     ocorrencia_evento = relationship("OcorrenciaEvento", back_populates="presenca")
-    aluno = relationship("Aluno", back_populates="presenca")
+    aluno = relationship("Aluno", back_populates="presencas")

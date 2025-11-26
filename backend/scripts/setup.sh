@@ -55,6 +55,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 REPO_ROOT="${SCRIPT_DIR%/scripts}"
 cd "$REPO_ROOT"
 
+# Load .env into the script environment if present so we can use DATABASE_* vars
+if [ -f ".env" ]; then
+  # shellcheck disable=SC1091
+  set -o allexport
+  # shellcheck disable=SC1091
+  source ".env"
+  set +o allexport
+fi
+
 # Optionally update repository before starting containers/migrations.
 if [ "$DO_GIT_PULL" = true ]; then
   echo "[setup_db] Git pull requested. Checking for uncommitted changes..."
@@ -76,9 +85,49 @@ if [ "$DO_UP" = true ]; then
   docker compose up -d
 fi
 
+wait_for_db() {
+  # Wait until the 'db' host accepts TCP connections on the configured port.
+  # Prefer an active TCP check from the backend container to avoid false positives
+  # where the container logs contain a readiness message but the network port
+  # is not yet accepting connections.
+  echo "[setup_db] Waiting for DB to accept connections..."
+  # try for up to 120 seconds
+  for i in $(seq 1 120); do
+    # Prefer using mysqladmin inside the DB container to verify server readiness.
+    if docker compose exec -T db mysqladmin ping -uroot -p"${DATABASE_PASSWORD:-}" --silent 2>/dev/null; then
+      echo "[setup_db] DB is available (mysqladmin ping succeeded)"
+      return 0
+    fi
+
+    # Fallback: try an active TCP connect from the backend container (less preferred).
+    if docker compose exec -T backend sh -c "python - <<'PY'\nimport socket,sys\ntry:\n s=socket.create_connection(('db',3306),timeout=1); s.close(); print('ok'); sys.exit(0)\nexcept Exception:\n sys.exit(1)\nPY" 2>/dev/null; then
+      echo "[setup_db] DB is available (tcp check from backend succeeded)"
+      return 0
+    fi
+
+    # If neither succeeded, inspect recent DB logs as a hint but continue retrying.
+    if docker compose logs db --tail 50 2>/dev/null | grep -qi "ready for connections"; then
+      echo "[setup_db] DB log shows 'ready for connections' but checks still failing; retrying... ($i)"
+    fi
+
+    sleep 1
+  done
+  echo "[setup_db] timeout waiting for DB (120s)" >&2
+  return 1
+}
+
 if [ "$DO_ALEMBIC" = true ]; then
   echo "[setup_db] Applying migrations: alembic upgrade head"
-  docker compose exec backend python -m alembic -c alembic.ini upgrade head
+  # ensure DB is accepting connections before attempting migrations
+  if ! wait_for_db; then
+    echo "[setup_db] Aborting alembic step because DB did not become available." >&2
+    exit 1
+  fi
+
+  docker compose exec backend python -m alembic -c alembic.ini upgrade head || {
+    echo "[setup_db] alembic reported an error. If it is an auth error, check DATABASE_* vars in .env." >&2
+    exit 1
+  }
 fi
 
 if [ "$DO_POPULATE" = true ]; then
