@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from datetime import timedelta
 from ..models import models # Onde está sua classe Evento
 
 def criar_evento_logica(db: Session, dados):
@@ -31,7 +32,9 @@ def criar_evento_logica(db: Session, dados):
         )
 
         db.add(novo_evento)
-        db.commit() # Salva permanentemente no banco
+        db.flush()
+        gerar_ocorrencias_evento(db, novo_evento)
+        db.commit()
         db.refresh(novo_evento) # Recarrega o objeto com o ID gerado pelo banco
 
         return novo_evento
@@ -42,3 +45,31 @@ def criar_evento_logica(db: Session, dados):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao persistir evento no banco: {str(e)}"
         )
+    
+def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
+    ocorrencias = []
+
+    if not evento.recorrente:
+        ocorrencia = models.OcorrenciaEvento(
+            idEvento=evento.id,
+            data=evento.dataInicio,
+            local=evento.local
+        )
+        db.add(ocorrencia)
+        ocorrencias.append(ocorrencia)
+        return ocorrencias
+
+    data_atual = evento.dataInicio
+
+    while data_atual.date() <= evento.dataTermino.date():
+        ocorrencia = models.OcorrenciaEvento(
+            idEvento=evento.id,
+            data=data_atual,
+            local=evento.local
+        )
+        db.add(ocorrencia)
+        ocorrencias.append(ocorrencia)
+
+        data_atual += timedelta(days=1)
+
+    return ocorrencias
