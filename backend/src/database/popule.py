@@ -25,7 +25,8 @@ def popular_banco():
         nome="Universidade Federal de Tecnologia",
         sigla="UFT",
         cnpj="12345678000199",
-        email="contato@uft.edu.br"
+        email="contato@uft.edu.br",
+        senha=pegar_senha_hash("universidade123")
     )
     session.add(univ)
     session.flush() # Garante que univ.id foi gerado
