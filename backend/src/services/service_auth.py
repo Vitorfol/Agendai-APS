@@ -43,26 +43,18 @@ def login_user(db: Session, email: str, password: str) -> Token:
 def login_university(university: models.Universidade, password: str | None = None) -> Token:
     """Autentica (ou emite token) para uma Universidade.
 
-    Atualmente o model `Universidade` não tem campo de senha — por isso esta
-    função apenas emite tokens com `sub` = university.email. Isso deve ser
-    ajustado se for necessária autenticação (ex: adicionar credencial ou
-    buscar um usuário admin associado à universidade).
+    O model `Universidade` possui campo `senha` armazenado como hash; por isso
+    esta função requer a senha em texto plano para verificação via
+    `security.verificar_senha` e, em caso de sucesso, emite tokens com
+    `sub` = university.email.
     """
-    # Agora a Universidade tem campo `senha`. Requeremos password e validamos.
+    # Requeremos password em texto plano para verificação.
     if password is None:
         return None
 
-    # Se não houver senha cadastrada neste registro, não autenticamos.
-    if not getattr(university, 'senha', None):
+    # Verifica a senha (sempre como hash armazenado no banco).
+    if not security.verificar_senha(password, university.senha):
         return None
-
-    # If plaintext mode is enabled, compare raw; otherwise verify hash.
-    if settings.ALLOW_PLAINTEXT_PASSWORDS:
-        if university.senha != password:
-            return None
-    else:
-        if not security.verificar_senha(password, university.senha):
-            return None
 
     access_token = security.create_access_token(subject=str(university.email))
     refresh_token = security.create_refresh_token(subject=str(university.email))
@@ -160,10 +152,11 @@ def criar_universidade(db: Session, dados):
 
 def criar_professor(db: Session, novo_usuario: models.Usuario, dados): 
     try:
+        # models.Professor uses snake_case column names (id_usuario, id_universidade, data_admissao)
         novo_professor = models.Professor(
-            idUsuario=novo_usuario.id,
-            idUniversidade=dados.idUniversidade,
-            dataAdmissao=dados.dataAdmissao,
+            id_usuario=novo_usuario.id,
+            id_universidade=dados.idUniversidade,
+            data_admissao=dados.dataAdmissao,
             titulacao=dados.titulacao # Agora salva a titulação!
         )
         db.add(novo_professor)
@@ -183,9 +176,11 @@ def criar_aluno(db: Session, novo_usuario: models.Usuario, dados):
           raise HTTPException(status_code=400, detail="Matrícula já cadastrada.")
           
     try:
+        # models.Aluno defines id_usuario and id_curso (snake_case). Map incoming Pydantic fields
+        # (which use camelCase) to the model column names here.
         novo_aluno = models.Aluno(
-            idUsuario=novo_usuario.id,
-            idCurso=dados.idCurso,
+            id_usuario=novo_usuario.id,
+            id_curso=dados.idCurso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)

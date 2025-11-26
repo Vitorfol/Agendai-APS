@@ -15,7 +15,7 @@ def criar_evento_logica(db: Session, dados):
     # 2. Validação de Integridade (Opcional, mas recomendado)
     # Verificar se o proprietário existe antes de tentar criar
     if dados.idProprietario is not None:
-        usuario = db.query(models.Usuario).filter(models.Usuario.id == dados.idProprietario).first()
+        usuario = db.query(models.Usuario).filter(models.Usuario.id == dados.id_proprietario).first()
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuário proprietário não encontrado.")
 
@@ -23,12 +23,12 @@ def criar_evento_logica(db: Session, dados):
         # 3. Criação do Objeto Evento
         # Note que mapeamos os campos do Pydantic (dados) para o SQLAlchemy (models)
         novo_evento = models.Evento(
-            idUniversidade=dados.idUniversidade,
-            dataInicio=dados.dataInicio,
-            dataTermino=dados.dataTermino,
+            idUniversidade=dados.id_universidade,
+            dataInicio=dados.data_inicio,
+            dataTermino=dados.data_termino,
             recorrente=dados.recorrente,
             categoria=dados.categoria,
-            idProprietario=dados.idProprietario
+            idProprietario=dados.id_proprietario
         )
 
         db.add(novo_evento)
