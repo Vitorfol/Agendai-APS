@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from ..database.connection import get_db 
-from ..services import service_evento # Supondo que você criou este arquivo
+from ..services import service_events
 from ..schemas import schema
 
-router = APIRouter(prefix="/eventos", tags=["Eventos"])
+router = APIRouter(prefix="/events", tags=["Eventos"])
 
 @router.post("/", 
              response_model=schema.EventoResponse, 
@@ -15,7 +15,7 @@ def criar_evento(
 ):
     try:
         # Delega a lógica para o service
-        novo_evento = service_evento.criar_evento_logica(db=db, dados=dados)
+        novo_evento = service_events.criar_evento_logica(db=db, dados=dados)
         return novo_evento
         
     except HTTPException as e:
