@@ -13,7 +13,7 @@ DO_DOWN=true
 DO_UP=true
 DO_ALEMBIC=true
 DO_POPULATE=true
-DO_GIT_PULL=true
+# Note: automatic git pull removed to avoid unexpected repository changes during setup
 
 usage() {
   cat <<EOF
@@ -24,8 +24,7 @@ Options:
   --no-up          don't run 'docker compose up -d' (skip starting services)
   --no-alembic     don't run alembic upgrade head
   --no-populate    don't run the seed/popule script
-  --git-pull       run 'git pull --ff-only' in the backend repo before any actions (default: enabled)
-  --no-git-pull    disable automatic git pull (opt-out)
+  --no-git-pull    (removed) previously used to auto-pull changes before running setup
   -h, --help       show this help
 
 Examples:
@@ -43,8 +42,7 @@ while [[ $# -gt 0 ]]; do
     --no-up) DO_UP=false; shift ;;
     --no-alembic) DO_ALEMBIC=false; shift ;;
     --no-populate) DO_POPULATE=false; shift ;;
-  --git-pull) DO_GIT_PULL=true; shift ;;
-  --no-git-pull) DO_GIT_PULL=false; shift ;;
+  --no-git-pull) echo "--no-git-pull is deprecated; this setup script no longer auto-pulls."; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -65,15 +63,10 @@ if [ -f ".env" ]; then
 fi
 
 # Optionally update repository before starting containers/migrations.
-if [ "$DO_GIT_PULL" = true ]; then
-  echo "[setup_db] Git pull requested. Checking for uncommitted changes..."
-  if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
-    echo "[setup_db] Uncommitted changes detected in $REPO_ROOT. Please commit or stash before running --git-pull." >&2
-    exit 1
-  fi
-  echo "[setup_db] Running: git -C \"$REPO_ROOT\" pull --ff-only"
-  git -C "$REPO_ROOT" pull --ff-only
-fi
+
+# NOTE: We intentionally do not run 'git pull' here. Updating the repository is a
+# manual action to avoid unexpected changes during setup. Callers should run
+# 'git pull' themselves if they want to update before running this script.
 
 if [ "$DO_DOWN" = true ]; then
   echo "[setup_db] Running: docker compose down -v"
