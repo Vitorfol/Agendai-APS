@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 class Token(BaseModel):
     access_token: str
@@ -13,3 +13,7 @@ class TokenPayload(BaseModel):
     
 class TokenData(BaseModel):
     email: str | None = None
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str

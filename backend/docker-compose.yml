@@ -4,8 +4,19 @@ services:
       context: .
       dockerfile: Dockerfile
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - .env
     environment:
       - ENV=development
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REFRESH_TOKEN_EXPIRE_DAYS=${REFRESH_TOKEN_EXPIRE_DAYS}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_NAME=${DATABASE_NAME}
     ports:
       - "8000:8000"
     depends_on:
@@ -17,9 +28,11 @@ services:
     image: mysql:8.4
     container_name: agendai-db
     restart: always
+    env_file:
+      - .env
     environment:
-      MYSQL_DATABASE: agendai
-      MYSQL_ROOT_PASSWORD: 'admin123'
+      - MYSQL_DATABASE=${DATABASE_NAME}
+      - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
     ports:
       - '3307:3306'
     volumes:
