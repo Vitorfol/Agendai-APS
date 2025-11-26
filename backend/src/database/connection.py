@@ -24,11 +24,9 @@ session = Session()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-
 def get_db():
-	"""FastAPI dependency that yields a SQLAlchemy session and closes it afterwards."""
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

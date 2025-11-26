@@ -47,7 +47,7 @@ def popular_banco():
     # 3. Vincular Professor e Alunos aos Usuários
     # Professor (Herança/Vínculo 1:1 com Usuário)
     prof = Professor(
-        idUsuario=user_prof.id,
+        idUsuário=user_prof.id,
         idUniversidade=univ.id,
         dataAdmissao=datetime.now().date()
     )
@@ -64,8 +64,8 @@ def popular_banco():
     session.flush()
 
     # Alunos (Herança/Vínculo 1:1 com Usuário)
-    aluno1 = Aluno(idUsuario=user_aluno1.id, idCurso=curso.id, matricula="2023001")
-    aluno2 = Aluno(idUsuario=user_aluno2.id, idCurso=curso.id, matricula="2023002")
+    aluno1 = Aluno(idUsuário=user_aluno1.id, idCurso=curso.id, matricula="2023001")
+    aluno2 = Aluno(idUsuário=user_aluno2.id, idCurso=curso.id, matricula="2023002")
     session.add_all([aluno1, aluno2])
 
     # 4. Criar Eventos e Disciplinas
@@ -98,7 +98,7 @@ def popular_banco():
     # Disciplina (Vinculada ao ID do evento_aula)
     disciplina = Disciplina(
         idEvento=evento_aula.id,
-        idProfessor=prof.idUsuario,
+        idProfessor=prof.idUsuário,
         horario="19:00",
         nome="Banco de Dados I"
     )
@@ -126,14 +126,14 @@ def popular_banco():
     session.flush()
 
     notificacao = Notificacao(
-        idUsuario=user_aluno1.id,
+        idUsuário=user_aluno1.id,
         data=datetime.now(),
         evento="Aula de BD I começou"
     )
 
     convidado = Convidado(
         idEvento=evento_palestra.id,
-        idUsuario=user_convidado.id,
+        idUsuário=user_convidado.id,
         statusVinculo="Confirmado"
     )
     session.add_all([notificacao, convidado])
@@ -141,12 +141,12 @@ def popular_banco():
     # 7. Presença
     presenca1 = Presenca(
         idOcorrenciaEvento=ocorrencia.id,
-        idAluno=aluno1.idUsuario,
+        idAluno=aluno1.idUsuário,
         presente=True
     )
     presenca2 = Presenca(
         idOcorrenciaEvento=ocorrencia.id,
-        idAluno=aluno2.idUsuario,
+        idAluno=aluno2.idUsuário,
         presente=False
     )
     session.add_all([presenca1, presenca2])
@@ -155,7 +155,7 @@ def popular_banco():
     session.commit()
     print("--- Dados inseridos com sucesso! ---")
     print(f"Universidade ID: {univ.id}")
-    print(f"Professor Criado ID: {prof.idUsuario}")
+    print(f"Professor Criado ID: {prof.idUsuário}")
     print(f"Disciplina Criada: {disciplina.nome} (Vinculada ao Evento ID: {disciplina.idEvento})")
 
 if __name__ == "__main__":
