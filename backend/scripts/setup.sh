@@ -9,8 +9,7 @@ set -euo pipefail
 #  ./scripts/setup_db.sh --no-populate # skip running popule.py
 #  ./scripts/setup_db.sh --help
 
-# By default do NOT drop volumes/containers. Use --down to force destructive reset.
-DO_DOWN=false
+DO_DOWN=true
 DO_UP=true
 DO_ALEMBIC=true
 DO_POPULATE=true
@@ -21,8 +20,7 @@ usage() {
 Usage: $0 [options]
 
 Options:
-  --down           run 'docker compose down -v' (destructive reset)
-  --no-down        (deprecated) kept for backwards compatibility; previously skipped the down step
+  --no-down        don't run 'docker compose down -v' (skip dropping volumes)
   --no-up          don't run 'docker compose up -d' (skip starting services)
   --no-alembic     don't run alembic upgrade head
   --no-populate    don't run the seed/popule script
@@ -40,8 +38,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  --down) DO_DOWN=true; shift ;;
-  --no-down) echo "--no-down is deprecated; use --down to request a destructive reset"; DO_DOWN=false; shift ;;
+    --no-down) DO_DOWN=false; shift ;;
     --no-up) DO_UP=false; shift ;;
     --no-alembic) DO_ALEMBIC=false; shift ;;
     --no-populate) DO_POPULATE=false; shift ;;

@@ -152,10 +152,11 @@ def criar_universidade(db: Session, dados):
 
 def criar_professor(db: Session, novo_usuario: models.Usuario, dados): 
     try:
+        # models.Professor uses snake_case column names (id_usuario, id_universidade, data_admissao)
         novo_professor = models.Professor(
-            idUsuario=novo_usuario.id,
-            idUniversidade=dados.idUniversidade,
-            dataAdmissao=dados.dataAdmissao,
+            id_usuario=novo_usuario.id,
+            id_universidade=dados.idUniversidade,
+            data_admissao=dados.dataAdmissao,
             titulacao=dados.titulacao # Agora salva a titulação!
         )
         db.add(novo_professor)
@@ -175,9 +176,11 @@ def criar_aluno(db: Session, novo_usuario: models.Usuario, dados):
           raise HTTPException(status_code=400, detail="Matrícula já cadastrada.")
           
     try:
+        # models.Aluno defines id_usuario and id_curso (snake_case). Map incoming Pydantic fields
+        # (which use camelCase) to the model column names here.
         novo_aluno = models.Aluno(
-            idUsuario=novo_usuario.id,
-            idCurso=dados.idCurso,
+            id_usuario=novo_usuario.id,
+            id_curso=dados.idCurso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)
