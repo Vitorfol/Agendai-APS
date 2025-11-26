@@ -1,50 +1,82 @@
-# Como usar o alembic
-Nesse Texto eu explico os principais comandos necessários para usar o alembic
+# Como usar o Alembic
 
-O alembic é um versionador de banco de dados, utilizado para controlar melhor a modelagem do seu banco e evitar perda de dados.
-## Atualizar a modelagem do banco
+Este guia explica os principais comandos necessários para usar o Alembic no dia a dia do desenvolvimento.
 
-Após iniciar o *docker compose*, é possivel que você encontre o seu banco de dados vazio. se esse for o caso, basta executar a seguinte linha de comando:
+O Alembic é um versionador de banco de dados (ferramenta de migração) para SQLAlchemy, utilizado para controlar a evolução do esquema do seu banco de dados de forma segura e reproduzível.
 
-_docker compose exec backend alembic upgrade head_
+## 1. Comandos Básicos
 
-Isso vai fazer com que o banco de dados fique na versão mais atual disponivel.
+### Atualizar o banco para a última versão (Upgrade)
 
-## Modificar a modelagem do banco
+Após iniciar o *docker compose*, ou baixar atualizações de código de colegas, seu banco pode estar desatualizado. Para aplicar todas as mudanças pendentes:
 
-Caso você queira modificar o banco de dados (adicionar uma tabela, modificar uma coluna), para evitar a perda de dados execute: 
+`docker compose exec backend alembic upgrade head`
 
-_docker compose exec backend alembic revision --autogenerate -m "seu commit"_
+### Criar uma nova migração (Revision)
 
-## Desatualizar a modelagem do banco
+Sempre que você alterar seus arquivos de `models.py` (adicionar tabelas, mudar colunas), você precisa gerar um arquivo de revisão. O flag `--autogenerate` compara seu código com o banco atual:
 
-Caso seja necessário voltar atrás no seu banco de dados, apenas execute
+`docker compose exec backend alembic revision --autogenerate -m "descreva sua mudança aqui"`
 
-_docker compose exec backend alembic downgrade -1_
+*Dica: Sempre abra o arquivo gerado em `alembic/versions` para conferir se ele detectou as mudanças corretamente antes de aplicar.*
 
-## Iniciar o alembic
+### Desfazer mudanças (Downgrade)
 
-Este comando só deve ser utilizado em casos extremos, ele cria um novo alembic com uma nova configuração, perdendo todo o histórico de versões anterior
+Caso precise desfazer a última migração aplicada (útil se algo quebrou):
 
-_docker compose exec backend alembic init alembic_
+`docker compose exec backend alembic downgrade -1`
 
-## Script de conveniência
+Para voltar para uma versão específica (onde `<revision_id>` é o hash da versão):
+`docker compose exec backend alembic downgrade <revision_id>`
 
-Para facilitar a vida dos novos devs, há um script em `backend/scripts/setup_db.sh` que automatiza o fluxo comum (opcionalmente dropar volumes, subir serviços, aplicar migrations e popular o DB).
+Para voltar ao estado vazio (base):
+`docker compose exec backend alembic downgrade base`
 
-Exemplo de uso:
+## 2. Comandos de Consulta e Controle
 
-_cd backend_
+### Verificar o histórico (History)
 
-_./scripts/setup_db.sh_
+Para ver a lista de todas as revisões criadas no projeto (mostra os IDs e mensagens):
 
-Argumentos úteis:
-- `--no-down` — não executa `docker compose down -v` (útil se não quiser apagar seus dados locais)
-- `--no-populate` — não executa o seed (`popule.py`)
+`docker compose exec backend alembic history`
 
-Nota sobre atualização automática do repositório
-O script agora executa um `git pull --ff-only` no diretório `backend` por padrão antes de rodar as ações (migrations/populate). Se você preferir não atualizar automaticamente, use `--no-git-pull` ao chamar o script.
+Para ver com mais detalhes (data, hora):
+`docker compose exec backend alembic history --verbose`
 
-Por segurança, o pull será abortado se houver alterações locais não commitadas no diretório `backend` — nesse caso, faça commit, stash ou backup das suas mudanças e execute novamente.
+### Verificar versão atual (Current)
 
-Recomendo que todos os devs mantenham as migrations em `src/database/alembic/versions` no Git e, depois de puxar, executem `alembic upgrade head` (ou usem o script acima).
+Para saber em qual revisão exata o seu banco de dados está parado no momento:
+
+`docker compose exec backend alembic current`
+
+### Forçar uma versão (Stamp)
+
+O comando `stamp` é usado quando você quer atualizar a tabela de controle do Alembic (`alembic_version`) **sem rodar** os scripts de migração. Isso é útil se você restaurou um backup ou corrigiu o banco manualmente e só precisa "avisar" o Alembic que está tudo certo.
+
+Marcar o banco como atualizado (head):
+`docker compose exec backend alembic stamp head`
+
+Marcar o banco como estando em uma revisão específica:
+`docker compose exec backend alembic stamp <revision_id>`
+
+## 3. Situações Extremas
+
+### Reiniciar as migrações do Zero (Reset em Dev)
+
+Se o ambiente de desenvolvimento virou uma bagunça e você quer limpar o histórico de migrações:
+
+1. Apague todos os arquivos `.py` dentro da pasta `alembic/versions` (mas não apague a pasta em si).
+
+2. Apague a tabela `alembic_version` no seu banco de dados (comando SQL: `DROP TABLE alembic_version;`).
+
+3. Gere uma nova migração inicial:
+   `docker compose exec backend alembic revision --autogenerate -m "migracao_inicial"`
+
+4. Aplique a nova migração:
+   `docker compose exec backend alembic upgrade head`
+
+### Iniciar o Alembic (Init)
+
+Este comando cria a estrutura de pastas e configuração inicial (`alembic.ini`, `env.py`). Só deve ser usado na **criação do projeto**. Se executado novamente, pode sobrescrever configurações.
+
+`docker compose exec backend alembic init alembic`
