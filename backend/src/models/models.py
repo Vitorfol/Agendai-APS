@@ -58,12 +58,11 @@ class Usuario(Base):
 
 
 class Aluno(Base):
-    __tablename__ = "aluno"
-    
-    # Mudança: idUsuario -> id_usuario
-    id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"), primary_key=True)
-    id_curso = db.Column(db.Integer, ForeignKey("curso.id"))
-    matricula = db.Column(db.String(7)) # Removido acento de "mátricula"
+    __tablename__ = "Aluno"
+    # Este ID é PK e FK ao mesmo tempo, então é ÚNICO por ser PK.
+    idUsuario = db.Column("idUsuario", db.Integer, ForeignKey("Usuario.id"), primary_key=True)
+    idCurso = db.Column(db.Integer, ForeignKey("Curso.id"))
+    matricula = db.Column("matricula", db.String(7)) # Dica: Geralmente matrícula também é única (unique=True)
 
     # Relationships
     usuario = relationship("Usuario", back_populates="aluno")
@@ -72,12 +71,12 @@ class Aluno(Base):
 
 
 class Professor(Base):
-    __tablename__ = "professor"
-    
-    id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"), primary_key=True)
-    id_universidade = db.Column(db.Integer, ForeignKey("universidade.id"))
-    data_admissao = db.Column(db.Date) # dataAdmissão -> data_admissao
-    titulacao = db.Column(db.String(255))
+    __tablename__ = "Professor"
+    # ÚNICO por ser PK
+    idUsuario = db.Column("idUsuario", db.Integer, ForeignKey("Usuario.id"), primary_key=True)
+    idUniversidade = db.Column(db.Integer, ForeignKey("Universidade.id"))
+    dataAdmissao = db.Column("dataAdmissao", db.Date)
+    titulacao = db.Column("titulacao",db.String(255))
 
     # Relationships
     usuario = relationship("Usuario", back_populates="professor")
@@ -86,8 +85,8 @@ class Professor(Base):
 
 
 class Notificacao(Base):
-    __tablename__ = "notificacao" # Notificação -> notificacao
-    
+    __tablename__ = "Notificação"
+    idUsuario = db.Column("idUsuario", db.Integer, ForeignKey("Usuario.id"))
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"))
     data = db.Column(db.DateTime)
@@ -106,7 +105,7 @@ class Evento(Base):
     data_termino = db.Column(db.DateTime)
     recorrente = db.Column(db.Boolean)
     categoria = db.Column(db.String(255))
-    id_proprietario = db.Column(db.Integer, ForeignKey("usuario.id")) # idproprietário -> id_proprietario
+    idProprietario = db.Column("idproprietário", db.Integer, ForeignKey("Usuario.id"))
 
     # Relationships
     usuario = relationship("Usuario", back_populates="eventos")
@@ -117,10 +116,10 @@ class Evento(Base):
 
 
 class Disciplina(Base):
-    __tablename__ = "disciplina"
-    
-    id_evento = db.Column(db.Integer, ForeignKey("evento.id"), primary_key=True)
-    id_professor = db.Column(db.Integer, ForeignKey("professor.id_usuario"))
+    __tablename__ = "Disciplina"
+    # ÚNICO por ser PK
+    idEvento = db.Column(db.Integer, ForeignKey("Evento.id"), primary_key=True)
+    idProfessor = db.Column(db.Integer, ForeignKey("Professor.idUsuario"))
     horario = db.Column(db.String(10))
     nome = db.Column(db.String(255))
 
@@ -171,9 +170,9 @@ class Convidado(Base):
     __tablename__ = "convidado"
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_evento = db.Column(db.Integer, ForeignKey("evento.id"))
-    id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"))
-    status_vinculo = db.Column(db.String(255))
+    idEvento = db.Column(db.Integer, ForeignKey("Evento.id"))
+    idUsuario = db.Column("idUsuario", db.Integer, ForeignKey("Usuario.id"))
+    statusVinculo = db.Column(db.String(255))
 
     # Relationships
     evento = relationship("Evento", back_populates="convidados")
@@ -184,8 +183,8 @@ class Presenca(Base):
     __tablename__ = "presenca" # Presença -> presenca
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_ocorrencia_evento = db.Column(db.Integer, ForeignKey("ocorrencia_evento.id"))
-    id_aluno = db.Column(db.Integer, ForeignKey("aluno.id_usuario"))
+    idOcorrenciaEvento = db.Column("idOcorrênciaEvento", db.Integer, ForeignKey("OcorrênciaEvento.id"))
+    idAluno = db.Column(db.Integer, ForeignKey("Aluno.idUsuario"))
     presente = db.Column(db.Boolean)
 
     # Relationships

@@ -46,60 +46,39 @@ class UsuarioBase(BaseModel):
     email: EmailStr
     cpf: str = Field(..., min_length=11, max_length=11, description= "apenas numeros")
 
-# --- NOVO SCHEMA PARA O REGISTRO UNIFICADO ---
-class UsuarioRegistro(UsuarioBase):
+# 1. BASE: Schema com a Senha (Comum a ambos os novos registros)
+class UsuarioBaseRegister(UsuarioBase):
     """
-    Schema utilizado exclusivamente para o cadastro inicial.
-    Contém a senha e campos opcionais para Aluno ou Professor.
+    Base para todos os schemas de registro. Inclui a senha.
     """
     senha: str = Field(..., min_length=6, description="Senha de acesso")
-    
-    # Campos Específicos de Professor (Opcionais)
-    idUniversidade: Optional[int] = None
-    dataAdmissao: Optional[date] = None
-    titulacao: Optional[str] = None 
-    
-    # Campos Específicos de Aluno (Opcionais)
-    idCurso: Optional[int] = None
-    matricula: Optional[str] = None
 
-class UsuarioCreate(UsuarioBase):
-    pass
+# 2. NOVO SCHEMA PARA PROFESSOR (Campos obrigatórios)
+class RegistroProfessor(UsuarioBaseRegister):
+    """
+    Schema exclusivo para o registro de Professor. 
+    Campos específicos são OBRIGATÓRIOS (sem Optional).
+    """
+    idUniversidade: int # OBRIGATÓRIO no endpoint de Professor
+    titulacao: str = Field(..., description="Titulação do professor") 
+
+
+# 3. NOVO SCHEMA PARA ALUNO (Campos obrigatórios)
+class RegistroAluno(UsuarioBaseRegister):
+    """
+    Schema exclusivo para o registro de Aluno.
+    Campos específicos são OBRIGATÓRIOS (sem Optional).
+    """
+    idCurso: int # OBRIGATÓRIO no endpoint de Aluno
+    matricula: str = Field(..., max_length=7, description="Matrícula do aluno")
+
+# 4. Schemas Antigos (Manutenção/Remoção)
+# Você pode remover a classe UsuarioRegistro, pois ela será substituída por RegistroProfessor e RegistroAluno
+# class UsuarioRegistro(UsuarioBase): # <- REMOVER OU COMENTAR
+# ...
 
 class UsuarioResponse(UsuarioBase):
     id: int
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ==========================================
-# ALUNO
-# ==========================================
-class AlunoBase(BaseModel):
-    idUsuario: int # Relacionamento 1:1 com Usuario
-    idCurso: int
-    matricula: str = Field(..., max_length=7)
-
-class AlunoCreate(AlunoBase):
-    pass
-
-class AlunoResponse(AlunoBase):
-    # Podemos incluir detalhes aninhados na resposta se desejado
-    # usuario: Optional[UsuarioResponse] = None
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ==========================================
-# PROFESSOR
-# ==========================================
-class ProfessorBase(BaseModel):
-    idUsuario: int
-    idUniversidade: int
-    dataAdmissao: Optional[date] = None
-
-class ProfessorCreate(ProfessorBase):
-    pass
-
-class ProfessorResponse(ProfessorBase):
     model_config = ConfigDict(from_attributes=True)
 
 
