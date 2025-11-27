@@ -71,11 +71,11 @@ def popular_banco():
     # Evento genérico
     evento_palestra = Evento(
         id_universidade=univ.id,
-        data_inicio=datetime.now(),             # Mudança: dataInicio -> data_inicio
-        data_termino=datetime.now() + timedelta(hours=2), # Mudança: dataTermino -> data_termino
-        recorrente=False,
+        data_inicio=datetime.now(),
+        data_termino=datetime.now() + timedelta(hours=2),
+        recorrencia="Semanal",  # substitui recorrente=False
         categoria="Palestra",
-        id_proprietario=user_prof.id            # Mudança: idProprietario -> id_proprietario
+        id_proprietario=user_prof.id
     )
     session.add(evento_palestra)
     session.flush()
@@ -84,13 +84,25 @@ def popular_banco():
     evento_aula = Evento(
         id_universidade=univ.id,
         data_inicio=datetime.now(),
-        data_termino=datetime.now() + timedelta(60),
-        recorrente=True,
+        data_termino=datetime.now() + timedelta(hours=1),  # corrigido timedelta
+        recorrencia="Diário (Dias úteis)",  # substitui recorrente=True
         categoria="Aula",
         id_proprietario=user_prof.id
     )
     session.add(evento_aula)
-    session.flush() 
+    session.flush()
+
+    evento_workshop = Evento(
+        id_universidade=univ.id,
+        data_inicio=datetime.now() + timedelta(days=1),
+        data_termino=datetime.now() + timedelta(days=1, hours=3),
+        recorrencia="Diário",  # Novo valor de recorrência
+        categoria="Workshop",
+        id_proprietario=user_prof.id
+    )
+    session.add(evento_workshop)
+    session.flush()
+
 
     # Disciplina 
     disciplina = Disciplina(

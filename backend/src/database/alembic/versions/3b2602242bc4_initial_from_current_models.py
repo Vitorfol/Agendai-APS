@@ -57,7 +57,7 @@ def upgrade() -> None:
     sa.Column('id_universidade', sa.Integer(), nullable=True),
     sa.Column('data_inicio', sa.DateTime(), nullable=True),
     sa.Column('data_termino', sa.DateTime(), nullable=True),
-    sa.Column('recorrente', sa.Boolean(), nullable=True),
+    sa.Column('recorrencia', sa.String(length=255), nullable=True),
     sa.Column('categoria', sa.String(length=255), nullable=True),
     sa.Column('id_proprietario', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['id_proprietario'], ['usuario.id'], ),
@@ -69,6 +69,7 @@ def upgrade() -> None:
     sa.Column('id_usuario', sa.Integer(), nullable=True),
     sa.Column('data', sa.DateTime(), nullable=True),
     sa.Column('evento', sa.String(length=255), nullable=True),
+     sa.Column('mensagem', sa.String(length=255), nullable=True),
     sa.ForeignKeyConstraint(['id_usuario'], ['usuario.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
