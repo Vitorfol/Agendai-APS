@@ -35,8 +35,17 @@ def login_user(db: Session, email: str, password: str) -> Token:
     if not user:
         return None
 
-    access_token = security.create_access_token(subject=str(user.email))
-    refresh_token = security.create_refresh_token(subject=str(user.email))
+    # Determina a tag para o frontend com base no e-mail:
+    # - se o email contiver a substring "@aluno." => tag 'aluno'
+    # - caso contrário => tag 'professor'
+    # (pedido: não usar relações do ORM aqui, usar apenas o email)
+    if "@aluno." in user.email:
+        tag = 'aluno'
+    else:
+        tag = 'professor'
+
+    access_token = security.create_access_token(subject=str(user.email), tag=tag)
+    refresh_token = security.create_refresh_token(subject=str(user.email), tag=tag)
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
@@ -56,8 +65,9 @@ def login_university(university: models.Universidade, password: str | None = Non
     if not security.verificar_senha(password, university.senha):
         return None
 
-    access_token = security.create_access_token(subject=str(university.email))
-    refresh_token = security.create_refresh_token(subject=str(university.email))
+    # Marca token com tag 'universidade' para o frontend
+    access_token = security.create_access_token(subject=str(university.email), tag='universidade')
+    refresh_token = security.create_refresh_token(subject=str(university.email), tag='universidade')
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 def registrar_usuario_automatico(db: Session, dados):

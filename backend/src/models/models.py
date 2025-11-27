@@ -91,7 +91,8 @@ class Notificacao(Base):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"))
     data = db.Column(db.DateTime)
-    mensagem = db.Column("evento", db.String(255)) # Mudei nome da coluna pra evitar conflito com a tabela Evento, mas mantive string original se preferir
+    mensagem = db.Column("mensagem", db.String(255))
+    evento = db.Column("evento", db.String(255)) # Mudei nome da coluna pra evitar conflito com a tabela Evento, mas mantive string original se preferir
 
     # Relationships
     usuario = relationship("Usuario", back_populates="notificacao")

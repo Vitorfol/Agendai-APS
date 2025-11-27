@@ -10,6 +10,7 @@ class TokenPayload(BaseModel):
     sub: Optional[str] = None
     exp: Optional[int] = None
     type: Optional[str] = None
+    tag: Optional[str] = None
     
 class TokenData(BaseModel):
     email: str | None = None
