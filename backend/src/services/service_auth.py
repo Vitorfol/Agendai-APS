@@ -115,9 +115,9 @@ def registrar_professor(db: Session, dados: schema.RegistroProfessor):
 
         # 2. Cria o registro específico de Professor
         novo_professor = models.Professor(
-            idUsuario=novo_usuario.id,
-            idUniversidade=dados.idUniversidade,
-            dataAdmissao=dados.dataAdmissao,
+            id_usuario=novo_usuario.id,
+            id_universidade=dados.idUniversidade,
+            data_admissao=dados.dataAdmissao,
             titulacao=dados.titulacao
         )
         db.add(novo_professor)
@@ -151,8 +151,8 @@ def registrar_aluno(db: Session, dados: schema.RegistroAluno):
 
         # 3. Cria o registro específico de Aluno
         novo_aluno = models.Aluno(
-            idUsuario=novo_usuario.id,
-            idCurso=dados.idCurso,
+            id_usuario=novo_usuario.id,
+            id_curso=dados.idCurso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)
