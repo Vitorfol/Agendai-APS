@@ -1,7 +1,13 @@
+import sys
+import os
 from fastapi import FastAPI
-from . import models # Garante que os models SQLAlchemy sejam carregados
-from .database.connection import engine # Se você usa um engine global
-from .api import endpoints_auth # Importa o seu router de autenticação
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.append(project_root)
+from src.models.models import Base
+from src.database.connection import engine # Se você usa um engine global
+from src.api import endpoints_auth # Importa o seu router de autenticação
+from src.api import endpoints_events
 
 # 1. Inicializa a aplicação FastAPI
 app = FastAPI(
@@ -18,6 +24,7 @@ app = FastAPI(
 # 3. Inclui as rotas de autenticação
 # O módulo endpoints_auth deve ser acessível via importação relativa.
 app.include_router(endpoints_auth.router)
+app.include_router(endpoints_events.router)
 
 # 4. Rota de Saúde (Health Check)
 @app.get("/")

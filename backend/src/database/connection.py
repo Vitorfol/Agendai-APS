@@ -17,18 +17,15 @@ port = os.getenv("DATABASE_PORT")
 database = os.getenv("DATABASE_NAME")
 
 connect_string = f"mysql+pymysql://{user}:{senha}@{host}:{port}/{database}"
-engine = db.create_engine(connect_string, echo=True)
-conn = engine.connect()
+# Do not open a DB connection at import time. Create the engine with pool_pre_ping
+# so connections are checked/renewed when used. SessionLocal will create sessions
+# on demand.
+engine = db.create_engine(connect_string, echo=True, pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
-session = Session()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-
 def get_db():
-	"""FastAPI dependency that yields a SQLAlchemy session and closes it afterwards."""
-	db = SessionLocal()
-	try:
-		yield db
-	finally:
-		db.close()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
