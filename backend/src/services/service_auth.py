@@ -117,8 +117,6 @@ def registrar_professor(db: Session, dados: schema.RegistroProfessor):
         novo_professor = models.Professor(
             id_usuario=novo_usuario.id,
             id_universidade=dados.idUniversidade,
-            data_admissao=dados.dataAdmissao,
-            titulacao=dados.titulacao
         )
         db.add(novo_professor)
         
@@ -217,8 +215,6 @@ def criar_professor(db: Session, novo_usuario: models.Usuario, dados):
         novo_professor = models.Professor(
             id_usuario=novo_usuario.id,
             id_universidade=dados.idUniversidade,
-            data_admissao=dados.dataAdmissao,
-            titulacao=dados.titulacao # Agora salva a titulação!
         )
         db.add(novo_professor)
         
