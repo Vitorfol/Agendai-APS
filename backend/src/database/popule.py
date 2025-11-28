@@ -138,7 +138,8 @@ def popular_banco():
     notificacao = Notificacao(
         id_usuario=user_aluno1.id,          # Mudança: idUsuario -> id_usuario
         data=datetime.now(),
-        mensagem="Aula de BD I começou"     # Mudança: atributo 'evento' virou 'mensagem' na classe
+        mensagem="Aula de BD I começou",
+        evento="Banco de Dados I" # Mudança: atributo 'evento' virou 'mensagem' na classe
     )
 
     convidado = Convidado(

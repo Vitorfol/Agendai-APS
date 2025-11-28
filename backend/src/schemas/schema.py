@@ -60,7 +60,6 @@ class RegistroProfessor(UsuarioBaseRegister):
     Campos específicos são OBRIGATÓRIOS (sem Optional).
     """
     idUniversidade: int # OBRIGATÓRIO no endpoint de Professor
-    titulacao: str = Field(..., description="Titulação do professor") 
 
 
 # 3. NOVO SCHEMA PARA ALUNO (Campos obrigatórios)

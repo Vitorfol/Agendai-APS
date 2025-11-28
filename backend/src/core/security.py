@@ -14,7 +14,7 @@ def verificar_senha(senha_pura: str, senha_hash: str) -> bool:
 def pegar_senha_hash(senha: str) -> str:
     return pwd_context.hash(senha)
 
-def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(subject: str, expires_delta: Optional[timedelta] = None, tag: Optional[str] = None) -> str:
     """Cria um JWT de acesso (access token).
 
     subject: normalmente o identificador do usuário (ex: email ou user_id)
@@ -25,10 +25,13 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
         expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode = {"sub": subject, "type": "access", "exp": int(expire.timestamp())}
+    if tag is not None:
+        # adiciona a claim 'tag' no payload (somente para frontend distinguir telas)
+        to_encode["tag"] = tag
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None, tag: Optional[str] = None) -> str:
     """Cria um JWT de refresh (refresh token).
 
     Por padrão usa REFRESH_TOKEN_EXPIRE_DAYS das settings. expires_delta pode sobrescrever.
@@ -37,6 +40,8 @@ def create_refresh_token(subject: str, expires_delta: Optional[timedelta] = None
         expires_delta = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode = {"sub": subject, "type": "refresh", "exp": int(expire.timestamp())}
+    if tag is not None:
+        to_encode["tag"] = tag
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 

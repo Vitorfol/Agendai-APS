@@ -41,8 +41,17 @@ def login_user(db: Session, email: str, password: str) -> Token:
     if not user:
         return None
 
-    access_token = security.create_access_token(subject=str(user.email))
-    refresh_token = security.create_refresh_token(subject=str(user.email))
+    # Determina a tag para o frontend com base no e-mail:
+    # - se o email contiver a substring "@aluno." => tag 'aluno'
+    # - caso contrário => tag 'professor'
+    # (pedido: não usar relações do ORM aqui, usar apenas o email)
+    if "@aluno." in user.email:
+        tag = 'aluno'
+    else:
+        tag = 'professor'
+
+    access_token = security.create_access_token(subject=str(user.email), tag=tag)
+    refresh_token = security.create_refresh_token(subject=str(user.email), tag=tag)
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
@@ -62,8 +71,9 @@ def login_university(university: models.Universidade, password: str | None = Non
     if not security.verificar_senha(password, university.senha):
         return None
 
-    access_token = security.create_access_token(subject=str(university.email))
-    refresh_token = security.create_refresh_token(subject=str(university.email))
+    # Marca token com tag 'universidade' para o frontend
+    access_token = security.create_access_token(subject=str(university.email), tag='universidade')
+    refresh_token = security.create_refresh_token(subject=str(university.email), tag='universidade')
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 def criar_usuario_base(db: Session, dados):
@@ -105,10 +115,8 @@ def registrar_professor(db: Session, dados: schema.RegistroProfessor):
 
         # 2. Cria o registro específico de Professor
         novo_professor = models.Professor(
-            idUsuario=novo_usuario.id,
-            idUniversidade=dados.idUniversidade,
-            dataAdmissao=dados.dataAdmissao,
-            titulacao=dados.titulacao
+            id_usuario=novo_usuario.id,
+            id_universidade=dados.idUniversidade,
         )
         db.add(novo_professor)
         
@@ -141,8 +149,8 @@ def registrar_aluno(db: Session, dados: schema.RegistroAluno):
 
         # 3. Cria o registro específico de Aluno
         novo_aluno = models.Aluno(
-            idUsuario=novo_usuario.id,
-            idCurso=dados.idCurso,
+            id_usuario=novo_usuario.id,
+            id_curso=dados.idCurso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)
@@ -207,8 +215,6 @@ def criar_professor(db: Session, novo_usuario: models.Usuario, dados):
         novo_professor = models.Professor(
             id_usuario=novo_usuario.id,
             id_universidade=dados.idUniversidade,
-            data_admissao=dados.dataAdmissao,
-            titulacao=dados.titulacao # Agora salva a titulação!
         )
         db.add(novo_professor)
         
