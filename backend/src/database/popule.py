@@ -46,8 +46,7 @@ def popular_banco():
     # Professor
     prof = Professor(
         id_usuario=user_prof.id,        # Mudança: idUsuario -> id_usuario
-        id_universidade=univ.id,        # Mudança: idUniversidade -> id_universidade
-        data_admissao=datetime.now().date() # Mudança: dataAdmissao -> data_admissao
+        id_universidade=univ.id         # Mudança: idUniversidade -> id_universidade
     )
     session.add(prof)
 

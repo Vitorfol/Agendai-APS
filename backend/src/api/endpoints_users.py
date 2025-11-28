@@ -7,6 +7,7 @@ from ..schemas import schema
 from ..schemas.jwt import TokenPayload
 from typing import Union
 from sqlalchemy import text
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/users", tags=["Usuários"])
 
@@ -37,11 +38,22 @@ def user_me(
         return dict(row._mapping)
 
     # Por padrão, assume usuário 'usuario'
-    stmt = text("SELECT id, nome, email, cpf FROM usuario WHERE email = :email")
+    # Se for aluno, fazer JOIN com a tabela `aluno` para obter `matricula` (coluna existe apenas em `aluno`)
+    if current_payload.tag == "aluno":
+        stmt = text(
+            "SELECT u.id, u.nome, u.email, u.cpf, a.matricula "
+            "FROM usuario u JOIN aluno a ON a.id_usuario = u.id "
+            "WHERE u.email = :email"
+        )
+    else:
+        # outros tipos (professor, etc.) não têm matrícula na tabela `usuario`
+        stmt = text("SELECT id, nome, email, cpf FROM usuario WHERE email = :email")
+
     row = db.execute(stmt, {"email": email}).fetchone()
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
-    return dict(row._mapping)
+    result = dict(row._mapping)
+    return JSONResponse(content=result)
 
 #   Testes manuais com curl:
 #   RESPONSE=$(curl -s -X POST http://localhost:8000/api/auth/login \

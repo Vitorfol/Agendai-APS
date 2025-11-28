@@ -76,8 +76,6 @@ class Professor(Base):
     
     id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"), primary_key=True)
     id_universidade = db.Column(db.Integer, ForeignKey("universidade.id"))
-    data_admissao = db.Column(db.Date) # dataAdmissão -> data_admissao
-    titulacao = db.Column(db.String(255))
 
     # Relationships
     usuario = relationship("Usuario", back_populates="professor")

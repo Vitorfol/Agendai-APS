@@ -77,6 +77,7 @@ class RegistroAluno(UsuarioBaseRegister):
 # ...
 
 class UsuarioResponse(UsuarioBase):
+    matricula: Optional[str] = None
     id: int
     model_config = ConfigDict(from_attributes=True)
 
