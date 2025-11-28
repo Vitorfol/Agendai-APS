@@ -23,12 +23,12 @@ def criar_evento_logica(db: Session, dados):
         # 3. Criação do Objeto Evento
         # Note que mapeamos os campos do Pydantic (dados) para o SQLAlchemy (models)
         novo_evento = models.Evento(
-            idUniversidade=dados.id_universidade,
-            dataInicio=dados.data_inicio,
-            dataTermino=dados.data_termino,
-            recorrente=dados.recorrente,
+            idUniversidade=dados.idUniversidade,
+            dataInicio=dados.dataInicio,
+            dataTermino=dados.dataTermino,
+            recorrencia=dados.recorrencia,
             categoria=dados.categoria,
-            idProprietario=dados.id_proprietario
+            idProprietario=dados.idPproprietario
         )
 
         db.add(novo_evento)
@@ -49,7 +49,10 @@ def criar_evento_logica(db: Session, dados):
 def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     ocorrencias = []
 
-    if not evento.recorrente:
+    recorrencia = evento.recorrencia.lower() if evento.recorrencia else None
+
+    # Caso não tenha recorrência definida → apenas uma ocorrência
+    if recorrencia not in ["diario", "diario_uteis", "semanal"]:
         ocorrencia = models.OcorrenciaEvento(
             idEvento=evento.id,
             data=evento.dataInicio,
@@ -60,15 +63,36 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
         return ocorrencias
 
     data_atual = evento.dataInicio
+    dia_semana_inicial = evento.dataInicio.weekday()  # 0 = seg ... 6 = dom
 
     while data_atual.date() <= evento.dataTermino.date():
-        ocorrencia = models.OcorrenciaEvento(
-            idEvento=evento.id,
-            data=data_atual,
-            local=evento.local
-        )
-        db.add(ocorrencia)
-        ocorrencias.append(ocorrencia)
+
+        gerar = False
+
+        # --- 1. RECORRÊNCIA DIÁRIA ---
+        if recorrencia == "Diário":
+            gerar = True
+
+        # --- 2. RECORRÊNCIA DIÁRIA (DIAS ÚTEIS) ---
+        elif recorrencia == "Diário (Dias úteis)":
+            # weekday 0 a 4 = seg a sex
+            if 0 <= data_atual.weekday() <= 4:
+                gerar = True
+
+        # --- 3. RECORRÊNCIA SEMANAL ---
+        elif recorrencia == "Semanal":
+            if data_atual.weekday() == dia_semana_inicial:
+                gerar = True
+
+        # Criar ocorrência se permitido pela regra
+        if gerar:
+            ocorrencia = models.OcorrenciaEvento(
+                idEvento=evento.id,
+                data=data_atual,
+                local=evento.local
+            )
+            db.add(ocorrencia)
+            ocorrencias.append(ocorrencia)
 
         data_atual += timedelta(days=1)
 

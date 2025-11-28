@@ -88,7 +88,7 @@ class EventoBase(BaseModel):
     idUniversidade: int
     dataInicio: datetime
     dataTermino: datetime
-    recorrente: bool = False
+    recorrencia: Optional[str] = None
     categoria: Optional[str] = None
     idProprietario: Optional[int] = None # ID do Usuário dono
 
