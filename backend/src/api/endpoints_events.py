@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
+from ..core.config import settings
 from ..database.connection import get_db 
 from ..services import service_events
 from ..schemas import schema
 
-router = APIRouter(prefix="/events", tags=["Eventos"])
+router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Eventos"])
 
 @router.post("/", 
              response_model=schema.EventoResponse, 

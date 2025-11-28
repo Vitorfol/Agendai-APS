@@ -7,7 +7,6 @@ from ..models.models import Usuario, Universidade
 from ..schemas.jwt import Token, LoginRequest
 
 from ..schemas import schema # Importa o schema.py modificado
-from ..core.config import settings
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/auth", tags=["Autenticação"])
 
@@ -66,8 +65,10 @@ def registrar_aluno(
         )    
         
 @router.post("/login",
-             response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+             response_model=Token,
+             status_code=status.HTTP_200_OK,
+             summary="Realizar login e retornar tokens")
+def login(data: LoginRequest, db: Session = Depends(get_db)) -> Token:
     """Endpoint de login: valida credenciais e retorna access + refresh tokens.
 
     Se o email pertence a uma `Universidade`, delega para `login_university` (placeholder).
@@ -81,7 +82,11 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
         # Delegar para o serviço especializado (em service_auth)
         token = service_auth.login_university(university=university, password=data.password)
         if not token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas (university)")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Credenciais inválidas (university)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return token
 
     # Autentica usuário padrão via service

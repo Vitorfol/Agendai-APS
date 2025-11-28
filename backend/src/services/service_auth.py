@@ -6,7 +6,7 @@ from ..core.config import settings
 from ..schemas import schema
 from ..models import models
 from ..core import security # Importa seu arquivo com passlib
-from ..schemas.jwt import Token
+from ..schemas.jwt import Token, TokenPayload
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
@@ -184,11 +184,7 @@ def criar_universidade(db: Session, dados):
     if db.query(models.Universidade).filter(models.Universidade.cnpj == dados.cnpj).first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CNPJ já cadastrado.")
 
-    # Decide whether to store raw password or hash based on settings
-    if settings.ALLOW_PLAINTEXT_PASSWORDS:
-        senha_para_salvar = dados.senha
-    else:
-        senha_para_salvar = security.pegar_senha_hash(dados.senha)
+    senha_para_salvar = security.pegar_senha_hash(dados.senha)
 
     try:
         nova_uni = models.Universidade(
@@ -248,12 +244,10 @@ def criar_aluno(db: Session, novo_usuario: models.Usuario, dados):
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Erro ao registrar aluno: {str(e)}")
         
-def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
-    """Valida o token de acesso e retorna o email do usuário presente em `sub`.
+def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenPayload:
+    """Valida o token de acesso e retorna o TokenPayload completo.
 
-    Esta função NÃO consulta o banco: ela apenas valida o JWT (assinatura/expiração)
-    e extrai o campo `sub` (assumido como email). Endpoints protegidos podem usar
-    esse email para buscar o usuário no banco se necessário.
+    Para endpoints que só precisam do email, use o wrapper `get_current_user_email`.
     """
     payload = security.decode_token(token)
 
@@ -271,4 +265,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    return payload
+
+
+# Compatibilidade: wrapper que retorna apenas o email (sub) para callers antigos.
+def get_current_user_email(payload: TokenPayload = Depends(get_current_user)) -> str:
     return payload.sub
