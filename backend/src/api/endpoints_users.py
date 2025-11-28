@@ -42,5 +42,13 @@ def user_me(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
     return dict(row._mapping)
+
+#   Testes manuais com curl:
+#   RESPONSE=$(curl -s -X POST http://localhost:8000/api/auth/login \
+#   -H "Content-Type: application/json" \
+#   -d '{"email":"contato@uece.br","password":"dedelbrabo"}')
+#   ACCESS_TOKEN=$(python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))"
+#   <<< "$RESPONSE") && curl -s -H "Authorization: Bearer $ACCESS_TOKEN"
+#   http://localhost:8000/api/users/me | python3 -m json.tool
     
     
