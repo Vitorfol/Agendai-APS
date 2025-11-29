@@ -1,6 +1,7 @@
 import sys
 import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.append(project_root)
@@ -17,6 +18,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"]
+)
 # 2. Configuração do Banco de Dados (Opcional, mas útil para o dev)
 # Descomente a linha abaixo se quiser que as tabelas sejam criadas automaticamente
 # na primeira inicialização (apenas se não estiver usando Alembic para migrações).
