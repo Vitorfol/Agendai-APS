@@ -51,11 +51,23 @@ def popular_banco():
     session.add(prof)
 
     # Curso
+# Curso
     curso = Curso(
         nome="Ciência da Computação",
         sigla="BCC",
         email="bcc@uft.edu.br",
-        id_universidade=univ.id         # Mudança: idUniversidade -> id_universidade
+        id_universidade=univ.id,
+        graduacao=True      # Mudança: idUniversidade -> id_universidade
+    )
+    session.add(curso)
+    session.flush()
+
+    curso2 = Curso(
+        nome="Matematica",
+        sigla="MAT",
+        email="mat@uft.edu.br",
+        id_universidade=univ.id,
+        graduacao=False      # Mudança: idUniversidade -> id_universidade
     )
     session.add(curso)
     session.flush()

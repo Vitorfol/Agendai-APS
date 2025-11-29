@@ -33,6 +33,7 @@ class Curso(Base):
     nome = db.Column(db.String(255))
     sigla = db.Column(db.String(10))
     email = db.Column(db.String(255), unique=True)
+    graduacao = db.Column(db.Boolean)
 
     # Relationships
     universidade = relationship("Universidade", back_populates="cursos")
