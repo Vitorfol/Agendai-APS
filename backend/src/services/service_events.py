@@ -25,9 +25,9 @@ def criar_evento_logica(db: Session, dados):
             idUniversidade=dados.id_universidade,
             dataInicio=dados.data_inicio,
             dataTermino=dados.data_termino,
-            recorrente=dados.recorrente,
+            recorrencia=dados.recorrencia,
             categoria=dados.categoria,
-            idProprietario=dados.id_proprietario
+            emailProprietario=dados.email_proprietario
         )
 
         db.add(novo_evento)

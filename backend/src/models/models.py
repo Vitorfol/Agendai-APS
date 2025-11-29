@@ -103,9 +103,9 @@ class Evento(Base):
     id_universidade = db.Column(db.Integer, ForeignKey("universidade.id"))
     data_inicio = db.Column(db.DateTime)
     data_termino = db.Column(db.DateTime)
-    recorrente = db.Column(db.Boolean)
+    recorrencia = db.Column(db.String(255))
     categoria = db.Column(db.String(255))
-    id_proprietario = db.Column(db.Integer, ForeignKey("usuario.id")) # idproprietário -> id_proprietario
+    email_proprietario = db.Column(db.String(255), ForeignKey("usuario.email")) # idproprietário -> id_proprietario
 
     # Relationships
     usuario = relationship("Usuario", back_populates="eventos")
