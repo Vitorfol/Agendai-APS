@@ -5,6 +5,8 @@ from ..database.connection import get_db
 from ..services import service_auth 
 from ..models.models import Usuario, Universidade
 from ..schemas.jwt import Token, LoginRequest
+from ..schemas.jwt import TokenPayload
+from ..core import security
 
 from ..schemas import schema # Importa o schema.py modificado
 
@@ -98,3 +100,34 @@ def login(data: LoginRequest, db: Session = Depends(get_db)) -> Token:
 
     return token
 
+@router.post("/refresh",
+            response_model=Token,
+            status_code=status.HTTP_200_OK,
+            summary="Atualizar tokens usando refresh token")
+def refresh_token(token: str = Depends(service_auth.oauth2_scheme)) -> Token:
+    """Atualiza os tokens de acesso e refresh usando o refresh token válido."""
+    
+    current_payload = security.decode_token(token)
+    
+    if not current_payload or getattr(current_payload, "type", None) != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido para refresh",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    email = getattr(current_payload, "sub", None)
+    if email is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido: sub ausente",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    access_token = security.create_access_token(subject=str(email), tag=getattr(current_payload, "tag", None))
+    refresh_token = security.create_refresh_token(subject=str(email), tag=getattr(current_payload, "tag", None))
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer"
+    )
