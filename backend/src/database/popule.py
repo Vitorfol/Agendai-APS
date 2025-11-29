@@ -55,7 +55,18 @@ def popular_banco():
         nome="Ciência da Computação",
         sigla="BCC",
         email="bcc@uft.edu.br",
-        id_universidade=univ.id         # Mudança: idUniversidade -> id_universidade
+        id_universidade=univ.id,         # Mudança: idUniversidade -> id_universidade
+        graduacao=True                   # Novo campo adicionado
+    )
+    session.add(curso)
+    session.flush()
+
+    curso = Curso(
+        nome="Matemática",
+        sigla="MAT",
+        email="bmat@uft.edu.br",
+        id_universidade=univ.id,        # Mudança: idUniversidade -> id_universidade
+        graduacao=False                  # Novo campo adicionado
     )
     session.add(curso)
     session.flush()
