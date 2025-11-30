@@ -69,7 +69,7 @@ def popular_banco():
         id_universidade=univ.id,
         graduacao=False      # Mudança: idUniversidade -> id_universidade
     )
-    session.add(curso)
+    session.add(curso2)
     session.flush()
 
     # Alunos
@@ -84,9 +84,9 @@ def popular_banco():
         id_universidade=univ.id,
         data_inicio=datetime.now(),             # Mudança: dataInicio -> data_inicio
         data_termino=datetime.now() + timedelta(hours=2), # Mudança: dataTermino -> data_termino
-        recorrente=False,
+        recorrencia="False",
         categoria="Palestra",
-        id_proprietario=user_prof.id            # Mudança: idProprietario -> id_proprietario
+    email_proprietario=user_prof.email     # Mudança: idProprietario -> email_proprietario (agora referencia usuario.email)
     )
     session.add(evento_palestra)
     session.flush()
@@ -96,9 +96,9 @@ def popular_banco():
         id_universidade=univ.id,
         data_inicio=datetime.now(),
         data_termino=datetime.now() + timedelta(60),
-        recorrente=True,
+        recorrencia="True",
         categoria="Aula",
-        id_proprietario=user_prof.id
+    email_proprietario=user_prof.email
     )
     session.add(evento_aula)
     session.flush() 
