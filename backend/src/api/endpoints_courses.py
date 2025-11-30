@@ -8,7 +8,7 @@ from ..schemas import schema
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/courses", tags=["Cursos"])
 
-@router.get("/cursos", response_model=List[CursoResponse])
+@router.get("/cursos", response_model=List[schema.CursoResponse])
 def listar_cursos(
     graduacao: bool | None = None,
     db: Session = Depends(get_db)

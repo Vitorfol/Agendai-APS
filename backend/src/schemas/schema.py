@@ -26,7 +26,8 @@ class CursoBase(BaseModel):
     nome: str = Field(..., max_length=255)
     sigla: str = Field(..., max_length=10)
     email: Optional[EmailStr] = None
-    idUniversidade: int
+    id_universidade: int
+    graduacao: Optional[bool] = None
 
 class CursoCreate(CursoBase):
     pass
