@@ -88,8 +88,6 @@ class UsuarioResponse(UsuarioBase):
 # ==========================================
 class EventoBase(BaseModel):
     idUniversidade: int
-    nome: str = Field(..., max_length=255)
-    descricao: Optional[str] = Field(None, max_length=500)
     dataInicio: datetime
     dataTermino: datetime
     recorrencia: Optional[str] = None
