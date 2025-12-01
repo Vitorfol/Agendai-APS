@@ -101,6 +101,8 @@ class Evento(Base):
     __tablename__ = "evento"
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(255))
+    descricao = db.Column(db.String(500))
     id_universidade = db.Column(db.Integer, ForeignKey("universidade.id"))
     data_inicio = db.Column(db.DateTime)
     data_termino = db.Column(db.DateTime)
