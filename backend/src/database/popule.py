@@ -32,6 +32,16 @@ def popular_banco():
     session.add(univ)
     session.flush() # Garante que univ.id foi gerado
 
+    univ2 = Universidade(
+        nome="Universidade Estadual do Ceará",
+        sigla="UECE",
+        cnpj="12345678000200",
+        email="contato@uece,br",
+        senha=pegar_senha_hash("uece123")
+    )
+    session.add(univ2)
+    session.flush()
+
     # 2. Criar Usuarios (Base para Alunos, Professores e Admin)
     # Adicionando senha padrão (hash) para os usuários de teste
     user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111", senha=pegar_senha_hash("senha123"))
@@ -70,6 +80,16 @@ def popular_banco():
         graduacao=False      # Mudança: idUniversidade -> id_universidade
     )
     session.add(curso2)
+    session.flush()
+
+    curso3 = Curso(
+        nome="Fisica",
+        sigla="FIS",
+        email="fis@uece.br",
+        id_universidade=univ2.id,
+        graduacao=True      # Mudança: idUniversidade -> id_universidade
+    )
+    session.add(curso3)
     session.flush()
 
     # Alunos
