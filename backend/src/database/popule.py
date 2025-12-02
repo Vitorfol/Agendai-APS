@@ -101,6 +101,8 @@ def popular_banco():
     
     # Evento genérico
     evento_palestra = Evento(
+        nome ="Palestra sobre Inovações Tecnológicas",
+        descricao ="Uma palestra abordando as últimas inovações em tecnologia.",
         id_universidade=univ.id,
         data_inicio=datetime.now(),             # Mudança: dataInicio -> data_inicio
         data_termino=datetime.now() + timedelta(hours=2), # Mudança: dataTermino -> data_termino
@@ -113,6 +115,8 @@ def popular_banco():
 
     # Evento do tipo Disciplina
     evento_aula = Evento(
+        nome ="Aula de Banco de Dados I",
+        descricao ="Primeira aula da disciplina de Banco de Dados I.",
         id_universidade=univ.id,
         data_inicio=datetime.now(),
         data_termino=datetime.now() + timedelta(60),

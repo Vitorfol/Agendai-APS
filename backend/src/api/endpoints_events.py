@@ -12,11 +12,12 @@ router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Ev
              status_code=status.HTTP_201_CREATED)
 def criar_evento(
     dados: schema.EventoCreate,
+    disciplina: schema.DisciplinaCreate = None,
     db: Session = Depends(get_db)
 ):
     try:
         # Delega a lógica para o service
-        novo_evento = service_events.criar_evento_logica(db=db, dados=dados)
+        novo_evento = service_events.criar_evento_logica(db=db, dados=dados, disciplina=disciplina)
         return novo_evento
         
     except HTTPException as e:

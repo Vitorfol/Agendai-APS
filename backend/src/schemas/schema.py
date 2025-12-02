@@ -86,12 +86,14 @@ class UsuarioResponse(UsuarioBase):
 # EVENTO
 # ==========================================
 class EventoBase(BaseModel):
-    idUniversidade: int
-    dataInicio: datetime
-    dataTermino: datetime
+    nome: str = Field(..., max_length=255)
+    descricao: Optional[str] = Field(None, max_length=500)
+    id_universidade: int
+    data_inicio: datetime
+    data_termino: datetime
     recorrencia: Optional[str] = None
     categoria: Optional[str] = None
-    emailProprietario: Optional[str] = None # ID do Usuário dono
+    email_proprietario: Optional[str] = None # ID do Usuário dono
 
 class EventoCreate(EventoBase):
     pass
