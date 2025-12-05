@@ -120,7 +120,7 @@ def popular_banco():
         id_universidade=univ.id,
         data_inicio=datetime.now(),
         data_termino=datetime.now() + timedelta(60),
-        recorrencia="True",
+        recorrencia="Semanal",
         categoria="Aula",
     email_proprietario=user_prof.email
     )
@@ -132,7 +132,7 @@ def popular_banco():
         id_evento=evento_aula.id,           # Mudança: idEvento -> id_evento
         id_professor=prof.id_usuario,       # Mudança: idProfessor -> id_professor e idUsuario -> id_usuario
         horario="19:00",
-        nome="Banco de Dados I"
+        nome ="Banco de Dados I"
     )
     session.add(disciplina)
     session.flush()

@@ -36,14 +36,16 @@ def criar_evento_logica(db: Session, dados, disciplina = None):
 
         db.add(novo_evento)
         if dados.categoria == "Disciplina" and dados.id_disciplina is not None:
-            nova_disciplina = criar_disciplina_logica(db=db, dados=disciplina)
+            nova_disciplina, dias = criar_disciplina_logica(db=db, dados=disciplina)
             nova_disciplina.id_evento = novo_evento.id
+            dias.id_disciplina = novo_evento.id
             db.add(nova_disciplina)
+            db.add(dias)
         db.commit() # Salva permanentemente no banco
         db.refresh(novo_evento) # Recarrega o objeto com o ID gerado pelo banco
         db.refresh(nova_disciplina)
 
-        return {"evento":novo_evento} if dados.categoria != "Disciplina" else {"evento":novo_evento,"disciplina":nova_disciplina}
+        return {"evento":novo_evento} if dados.categoria != "Disciplina" else {"evento":novo_evento,"disciplina":nova_disciplina,"dias":dias}
 
     except Exception as e:
         db.rollback() # Desfaz tudo se der erro
@@ -57,12 +59,17 @@ def criar_evento_logica(db: Session, dados, disciplina = None):
 def criar_disciplina_logica(db: Session, dados):
     try:
         nova_disciplina = models.Disciplina(
-            nome=dados.nome,
-            codigo=dados.codigo,
-            nome_curso=dados.id_curso
+            id_professor=dados.id_professor,
+            horario=dados.horario,
+            nome_curso=dados.id_curso,
         )
+        dias = models.DisciplinaDias(
+            dias = dados.dias
 
-        return nova_disciplina
+        )
+    
+
+        return nova_disciplina,dias
 
     except Exception as e:
         db.rollback()
