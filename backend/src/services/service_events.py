@@ -91,6 +91,19 @@ def listar_ocorrencias_por_evento(db, id_evento):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar ocorrências do evento: {str(e)}"
         )
+    
+def listar_ocorrencias_por_evento_usuario(db, id_evento, email_user):
+    try:
+        ocorrencias = db.query(models.OcorrenciaEvento).join(models.Evento).filter(
+            models.Evento.id == id_evento,
+            models.Evento.email_proprietario == email_user
+        ).all()
+        return ocorrencias
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar ocorrências do evento para o usuário: {str(e)}"
+        )
 
 def deletar_evento(db: Session, id_evento: int):
 
