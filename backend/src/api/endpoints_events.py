@@ -45,3 +45,25 @@ def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao deletar evento: {str(e)}"
         )
+    
+
+@router.get("/{id_evento}", response_model=schema.EventoResponse, status_code=status.HTTP_200_OK)
+def obter_evento(id_evento: int, db: Session = Depends(get_db)):
+    """
+    Obtém um evento pelo seu ID.
+    """
+    try:
+        evento = service_events.pegar_evento_por_id(db, id_evento)
+        if not evento:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento não encontrado."
+            )
+        return evento
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao obter evento: {str(e)}"
+        )

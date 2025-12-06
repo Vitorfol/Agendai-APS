@@ -124,6 +124,7 @@ class Disciplina(Base):
     id_evento = db.Column(db.Integer, ForeignKey("evento.id"), primary_key=True)
     id_professor = db.Column(db.Integer, ForeignKey("professor.id_usuario"))
     horario = db.Column(db.String(10))
+    nome = db.Column(db.String(255))
 
     # Relationships
     evento = relationship("Evento", back_populates="disciplina")

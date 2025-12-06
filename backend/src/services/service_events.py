@@ -133,3 +133,13 @@ def deletar_evento(db: Session, id_evento: int):
 
     return {"mensagem": "Evento e suas dependências deletados com sucesso!"}
 
+
+def pegar_evento_por_id(db: Session, id_evento: int):
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    return evento
+
+
+def pegar_ocorrencias_evento(db: Session, id_evento: int):
+    ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
+    return ocorrencias
+
