@@ -81,6 +81,16 @@ def criar_disciplina_logica(db: Session, disciplina,dias):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao persistir disciplina no banco: {str(e)}"
         )
+    
+def listar_ocorrencias_por_evento(db, id_evento):
+    try:
+        ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
+        return ocorrencias
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar ocorrências do evento: {str(e)}"
+        )
 
 def deletar_evento(db: Session, id_evento: int):
 

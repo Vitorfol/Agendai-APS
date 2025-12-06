@@ -68,3 +68,17 @@ def obter_evento(id_evento: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao obter evento: {str(e)}"
         )
+    
+@router.get("/{id_evento}/occurrences", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
+def listar_ocorrencias_evento(id_evento: int, db: Session = Depends(get_db)):
+    """
+    Lista todas as ocorrências associadas a um evento.
+    """
+    try:
+        ocorrencias = service_events.listar_ocorrencias_por_evento(db, id_evento)
+        return ocorrencias
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao listar ocorrências do evento: {str(e)}"
+        )
