@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 
-def criar_evento_logica(db: Session, dados, disciplina = None):
+def criar_evento_logica(db: Session, dados, disciplina = None,dias = None):
     # 1. Validação de Negócio: Datas Coerentes
     # Não faz sentido o evento terminar antes de começar
     if dados.data_termino <= dados.data_inicio:
@@ -33,19 +33,21 @@ def criar_evento_logica(db: Session, dados, disciplina = None):
             email_proprietario=dados.email_proprietario
         )
 
-
         db.add(novo_evento)
-        if dados.categoria == "Disciplina" and dados.id_disciplina is not None:
-            nova_disciplina, dias = criar_disciplina_logica(db=db, dados=disciplina)
+        db.flush()  # Garante que o ID seja gerado
+        if dados.categoria == "Disciplina" and disciplina is not None and dias is not None:
+            nova_disciplina, dias = criar_disciplina_logica(db=db, disciplina=disciplina, dias=dias)
             nova_disciplina.id_evento = novo_evento.id
             dias.id_disciplina = novo_evento.id
             db.add(nova_disciplina)
             db.add(dias)
         db.commit() # Salva permanentemente no banco
         db.refresh(novo_evento) # Recarrega o objeto com o ID gerado pelo banco
-        db.refresh(nova_disciplina)
+        db.refresh(nova_disciplina) if disciplina is not None else None
+        novo_evento.disciplina = nova_disciplina if disciplina is not None else None
+        novo_evento.disciplina.disciplina_dias = [dias] if disciplina is not None else None
 
-        return {"evento":novo_evento} if dados.categoria != "Disciplina" else {"evento":novo_evento,"disciplina":nova_disciplina,"dias":dias}
+        return novo_evento
 
     except Exception as e:
         db.rollback() # Desfaz tudo se der erro
@@ -56,15 +58,17 @@ def criar_evento_logica(db: Session, dados, disciplina = None):
     
 
 
-def criar_disciplina_logica(db: Session, dados):
+def criar_disciplina_logica(db: Session, disciplina,dias):
     try:
         nova_disciplina = models.Disciplina(
-            id_professor=dados.id_professor,
-            horario=dados.horario,
-            nome_curso=dados.id_curso,
+            id_evento=0,  # Será atualizado depois
+            id_professor=disciplina.id_professor,
+            horario=disciplina.horario,
+            nome = disciplina.nome
         )
         dias = models.DisciplinaDias(
-            dias = dados.dias
+            id_disciplina=0,  # Será atualizado depois
+            dia = dias.dia
 
         )
     

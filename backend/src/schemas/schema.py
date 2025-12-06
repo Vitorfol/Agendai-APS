@@ -60,7 +60,7 @@ class RegistroProfessor(UsuarioBaseRegister):
     Schema exclusivo para o registro de Professor. 
     Campos específicos são OBRIGATÓRIOS (sem Optional).
     """
-    idUniversidade: int # OBRIGATÓRIO no endpoint de Professor
+    id_universidade: int # OBRIGATÓRIO no endpoint de Professor
 
 
 # 3. NOVO SCHEMA PARA ALUNO (Campos obrigatórios)
@@ -69,7 +69,7 @@ class RegistroAluno(UsuarioBaseRegister):
     Schema exclusivo para o registro de Aluno.
     Campos específicos são OBRIGATÓRIOS (sem Optional).
     """
-    idCurso: int # OBRIGATÓRIO no endpoint de Aluno
+    id_curso: int # OBRIGATÓRIO no endpoint de Aluno
     matricula: str = Field(..., max_length=7, description="Matrícula do aluno")
 
 # 4. Schemas Antigos (Manutenção/Remoção)
@@ -107,8 +107,8 @@ class EventoResponse(EventoBase):
 # DISCIPLINA
 # ==========================================
 class DisciplinaBase(BaseModel):
-    idEvento: int # PK e FK ao mesmo tempo
-    idProfessor: int
+    id_evento: int # PK e FK ao mesmo tempo
+    id_professor: int
     horario: str = Field(..., max_length=10)
     nome: str = Field(..., max_length=255)
 
@@ -123,7 +123,7 @@ class DisciplinaResponse(DisciplinaBase):
 # DIAS DA DISCIPLINA
 # ==========================================
 class DiasDisciplinaBase(BaseModel):
-    idDisciplina: int
+    id_disciplina: int
     dia: str
 
 class DiasDisciplinaCreate(DiasDisciplinaBase):
@@ -137,8 +137,8 @@ class DiasDisciplinaResponse(DiasDisciplinaBase):
 # CURSO DISCIPLINA (Associação)
 # ==========================================
 class CursoDisciplinaBase(BaseModel):
-    idCurso: int
-    idDisciplina: int
+    id_curso: int
+    id_disciplina: int
     creditos: int
 
 class CursoDisciplinaCreate(CursoDisciplinaBase):
@@ -153,7 +153,7 @@ class CursoDisciplinaResponse(CursoDisciplinaBase):
 # OCORRÊNCIA EVENTO
 # ==========================================
 class OcorrenciaEventoBase(BaseModel):
-    idEvento: int
+    id_evento: int
     local: str = Field(..., max_length=255)
     data: datetime
 
@@ -169,7 +169,7 @@ class OcorrenciaEventoResponse(OcorrenciaEventoBase):
 # NOTIFICAÇÃO
 # ==========================================
 class NotificacaoBase(BaseModel):
-    idUsuario: int
+    id_usuario: int
     data: datetime
     evento: str
 
@@ -185,9 +185,9 @@ class NotificacaoResponse(NotificacaoBase):
 # CONVIDADO
 # ==========================================
 class ConvidadoBase(BaseModel):
-    idEvento: int
-    idUsuario: int
-    statusVinculo: str
+    id_evento: int
+    id_usuario: int
+    status_vinculo: str
 
 class ConvidadoCreate(ConvidadoBase):
     pass
@@ -201,8 +201,8 @@ class ConvidadoResponse(ConvidadoBase):
 # PRESENÇA
 # ==========================================
 class PresencaBase(BaseModel):
-    idOcorrenciaEvento: int
-    idAluno: int
+    id_ocorrenciaEvento: int
+    id_aluno: int
     presente: bool = False
 
 class PresencaCreate(PresencaBase):

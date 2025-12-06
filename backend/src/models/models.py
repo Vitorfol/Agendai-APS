@@ -137,7 +137,7 @@ class DisciplinaDias(Base):
     __tablename__ = "disciplina_dias"
     
     id_disciplina = db.Column(db.Integer, ForeignKey("disciplina.id_evento"), primary_key=True)
-    dia = db.Column(db.String(10), primary_key=True) 
+    dia = db.Column(db.String(10)) 
 
     # Relationships
     disciplina = relationship("Disciplina", back_populates="disciplina_dias")
