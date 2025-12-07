@@ -84,7 +84,7 @@ def listar_ocorrencias_evento(id_evento: int, db: Session = Depends(get_db)):
         )
     
 
-@router.get("/{id_evento}/occurrences/user={email_user}", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
+@router.get("/{id_evento}/occurrences/proprietary={email_user}", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
 def listar_ocorrencias_evento_usuario(id_evento: int, email_user: str, db: Session = Depends(get_db)):
     """
     Lista todas as ocorrências associadas a um evento para um usuário específico.
