@@ -97,14 +97,26 @@ def listar_ocorrencias_por_evento(db, id_evento):
 def listar_ocorrencias_por_evento_usuario(db, id_evento, email_user):
     try:
         ocorrencias = db.query(models.OcorrenciaEvento).join(models.Evento).filter(
-            models.Evento.id == id_evento,
-            models.Evento.email_proprietario == email_user
+            models.Evento.id == id_evento
         ).all()
         return ocorrencias
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao listar ocorrências do evento para o usuário: {str(e)}"
+        )
+    
+
+def listar_ocorrencias_por_usuario(db: Session, id_user: str):
+    try:
+        ocorrencias = db.query(models.OcorrenciaEvento).join(models.Presenca).filter(
+            models.Presenca.id_aluno == id_user
+        ).all()
+        return ocorrencias
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao listar ocorrências para o usuário: {str(e)}"
         )
 
 def deletar_evento(db: Session, id_evento: int):
@@ -172,6 +184,7 @@ def pegar_ocorrencias_evento(db: Session, id_evento: int):
     ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
     return ocorrencias
 
+<<<<<<< HEAD
 def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) -> dict | None: 
     
     start = datetime(date.year, date.month, date.day) 
@@ -253,3 +266,7 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
     if dias_list is not None:
         info["dias"] = dias_list
     return info
+=======
+
+
+>>>>>>> DEV
