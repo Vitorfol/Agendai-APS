@@ -99,7 +99,7 @@ def listar_ocorrencias_evento_usuario(id_evento: int, email_user: str, db: Sessi
             detail=f"Erro interno ao listar ocorrências do evento para o usuário: {str(e)}"
         )
         
-@router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK)
+@router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK, response_model_exclude_none=True)
 def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depends(get_db)):
     """
     Obtém a ocorrência de um evento em uma data específica com dados selecionados.

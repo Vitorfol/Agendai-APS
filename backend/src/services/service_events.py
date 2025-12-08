@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
@@ -177,7 +178,10 @@ def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) ->
     end = start + timedelta(days=1)  
     
     ocorrencia = db.query(models.OcorrenciaEvento).options(
+        # Eager-load evento + disciplina + disciplina_dias para evitar N+1
         joinedload(models.OcorrenciaEvento.evento)
+        .joinedload(models.Evento.disciplina)
+        .joinedload(models.Disciplina.disciplina_dias)
     ).filter(
         models.OcorrenciaEvento.id_evento == id_evento,
         models.OcorrenciaEvento.data >= start,
@@ -187,24 +191,65 @@ def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) ->
     if not ocorrencia:
         return None
 
-    return montar_informacoes_ocorrencia(ocorrencia)
+    # Se for disciplina, buscar os dias diretamente via SQL para evitar limitações
+    # do mapeamento ORM (onde a PK atual de DisciplinaDias pode colidir e sobrescrever
+    # múltiplas linhas com o mesmo id_disciplina). Isso garante que retornemos todos
+    # os dias armazenados no banco.
+    dias_list = None
+    try:
+        disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+        if disciplina:
+            # Ordena os dias na ordem da semana usando FIELD para garantir ordem previsível
+            result = db.execute(text(
+                "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
+                "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
+            ), {"id": disciplina.id_evento})
+            dias_list = [row[0] for row in result.fetchall()]
+    except Exception:
+        dias_list = None
+
+    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list)
 
 
-def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento) -> dict:
+def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list: list[str] | None = None) -> dict:
     """
     Função responsável por selecionar e formatar os dados da ocorrência e do evento relacionado.
     Você pode customizar aqui quais campos quer retornar.
     """
+    # data: apenas data (sem horário)
+    data_only = ocorrencia.data.date() if isinstance(ocorrencia.data, datetime) else ocorrencia.data
+
+    # por padrão, hora será o horário da ocorrência no formato HH:MM:SS
+    hora_val: str | None = None
+    try:
+        hora_val = ocorrencia.data.time().isoformat()
+    except Exception:
+        hora_val = None
+
+    # coletar recorrência do evento
+    recorrencia_val = ocorrencia.evento.recorrencia if hasattr(ocorrencia.evento, 'recorrencia') else None
+
+    # se for Disciplina, pegar horario da disciplina (string como 'AB'/'CD') e os dias
+    if getattr(ocorrencia.evento, 'categoria', None) and ocorrencia.evento.categoria.lower() == 'disciplina':
+        disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+        if disciplina:
+            # sobrescreve hora com o valor textual da disciplina
+            hora_val = disciplina.horario
+            # if dias_list was not provided, attempt to read via relationship as fallback
+            if dias_list is None:
+                dias_list = [d.dia for d in (disciplina.disciplina_dias or [])]
+
+    # retorna dict flat (sem subdivisão de evento)
     info = {
         "local": ocorrencia.local,
-        "data": ocorrencia.data,
-        "hora": ocorrencia.data.time(),
-        # Dados do evento relacionado (sem ids)
-        "evento": {
-            "nome": ocorrencia.evento.nome,
-            "categoria": ocorrencia.evento.categoria,
-            "descricao": ocorrencia.evento.descricao,
-            # Adicione ou remova campos conforme necessário
-        }
+        "data": data_only,
+        "hora": hora_val,
+        "nome": ocorrencia.evento.nome,
+        "categoria": ocorrencia.evento.categoria,
+        "descricao": ocorrencia.evento.descricao,
+        "recorrencia": recorrencia_val,
     }
+    # incluir 'dias' somente quando existir lista de dias (apenas para Disciplina)
+    if dias_list is not None:
+        info["dias"] = dias_list
     return info

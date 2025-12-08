@@ -160,23 +160,23 @@ class OcorrenciaEventoBase(BaseModel):
 class OcorrenciaEventoCreate(OcorrenciaEventoBase):
     pass
 
-# Schema com apenas os dados essenciais do evento
-class EventoResumo(BaseModel):
-    """Schema com campos selecionados do evento para retorno em ocorrências"""
+# Ocorrência: resposta pública (sem ids, flat dict)
+class OcorrenciaEventoResponse(BaseModel):
+    """Resposta pública de uma ocorrência (flat, sem nesting).
+
+    - `data` agora é apenas a data (dia/mês/ano).
+    - `hora` é uma string opcional: para eventos normais contém o horário da ocorrência (HH:MM:SS),
+        para eventos do tipo "Disciplina" contém o campo `horario` da `Disciplina` (por exemplo "AB"/"CD").
+    - `recorrencia` e `dias` são opcionais; `dias` é preenchido para eventos do tipo disciplina.
+    """
+    local: str = Field(..., max_length=255)
+    data: date
+    hora: Optional[str] = None
     nome: Optional[str] = None
     categoria: Optional[str] = None
     descricao: Optional[str] = None
-
-
-# Ocorrência: resposta pública (sem ids)
-class OcorrenciaEventoResponse(BaseModel):
-    """Resposta pública de uma ocorrência sem expor campos de identificador.
-    Mantemos apenas `local`, `data`, `hora` e o sub-objeto `evento`.
-    """
-    local: str = Field(..., max_length=255)
-    data: datetime
-    hora: Optional[time] = None
-    evento: EventoResumo
+    recorrencia: Optional[str] = None
+    dias: Optional[List[str]] = None
     model_config = ConfigDict(from_attributes=True)
 
 
