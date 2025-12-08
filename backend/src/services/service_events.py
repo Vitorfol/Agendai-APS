@@ -184,7 +184,6 @@ def pegar_ocorrencias_evento(db: Session, id_evento: int):
     ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
     return ocorrencias
 
-<<<<<<< HEAD
 def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) -> dict | None: 
     
     start = datetime(date.year, date.month, date.day) 
@@ -266,7 +265,3 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
     if dias_list is not None:
         info["dias"] = dias_list
     return info
-=======
-
-
->>>>>>> DEV
