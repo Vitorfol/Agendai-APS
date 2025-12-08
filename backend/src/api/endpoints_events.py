@@ -4,6 +4,7 @@ from ..core.config import settings
 from ..database.connection import get_db 
 from ..services import service_events
 from ..schemas import schema
+from datetime import date
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Eventos"])
 
@@ -96,4 +97,27 @@ def listar_ocorrencias_evento_usuario(id_evento: int, email_user: str, db: Sessi
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao listar ocorrências do evento para o usuário: {str(e)}"
+        )
+        
+@router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK)
+def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depends(get_db)):
+    """
+    Obtém a ocorrência de um evento em uma data específica com dados selecionados.
+    """
+    try:
+        # `pegar_ocorrencia_evento_por_data` aceita date/datetime and normalizes internaly,
+        # então basta passar o `date` recebido (date-only) diretamente.
+        ocorrencia = service_events.pegar_ocorrencia_evento_por_data(db, id_evento, date)
+        if not ocorrencia:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ocorrência não encontrada para a data especificada."
+            )
+        return ocorrencia
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao obter ocorrência: {str(e)}"
         )

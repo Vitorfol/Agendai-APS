@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 # ==========================================
 # UNIVERSIDADE
@@ -160,8 +160,23 @@ class OcorrenciaEventoBase(BaseModel):
 class OcorrenciaEventoCreate(OcorrenciaEventoBase):
     pass
 
-class OcorrenciaEventoResponse(OcorrenciaEventoBase):
-    id: int
+# Schema com apenas os dados essenciais do evento
+class EventoResumo(BaseModel):
+    """Schema com campos selecionados do evento para retorno em ocorrências"""
+    nome: Optional[str] = None
+    categoria: Optional[str] = None
+    descricao: Optional[str] = None
+
+
+# Ocorrência: resposta pública (sem ids)
+class OcorrenciaEventoResponse(BaseModel):
+    """Resposta pública de uma ocorrência sem expor campos de identificador.
+    Mantemos apenas `local`, `data`, `hora` e o sub-objeto `evento`.
+    """
+    local: str = Field(..., max_length=255)
+    data: datetime
+    hora: Optional[time] = None
+    evento: EventoResumo
     model_config = ConfigDict(from_attributes=True)
 
 

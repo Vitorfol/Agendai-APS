@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
+from datetime import datetime, timedelta, date
 
 def criar_evento_logica(db: Session, dados, disciplina = None,dias = None):
     # 1. Validação de Negócio: Datas Coerentes
@@ -170,3 +171,40 @@ def pegar_ocorrencias_evento(db: Session, id_evento: int):
     ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
     return ocorrencias
 
+def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) -> dict | None: 
+    
+    start = datetime(date.year, date.month, date.day) 
+    end = start + timedelta(days=1)  
+    
+    ocorrencia = db.query(models.OcorrenciaEvento).options(
+        joinedload(models.OcorrenciaEvento.evento)
+    ).filter(
+        models.OcorrenciaEvento.id_evento == id_evento,
+        models.OcorrenciaEvento.data >= start,
+        models.OcorrenciaEvento.data < end
+    ).first()
+    
+    if not ocorrencia:
+        return None
+
+    return montar_informacoes_ocorrencia(ocorrencia)
+
+
+def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento) -> dict:
+    """
+    Função responsável por selecionar e formatar os dados da ocorrência e do evento relacionado.
+    Você pode customizar aqui quais campos quer retornar.
+    """
+    info = {
+        "local": ocorrencia.local,
+        "data": ocorrencia.data,
+        "hora": ocorrencia.data.time(),
+        # Dados do evento relacionado (sem ids)
+        "evento": {
+            "nome": ocorrencia.evento.nome,
+            "categoria": ocorrencia.evento.categoria,
+            "descricao": ocorrencia.evento.descricao,
+            # Adicione ou remova campos conforme necessário
+        }
+    }
+    return info
