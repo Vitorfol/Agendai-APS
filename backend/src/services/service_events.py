@@ -16,6 +16,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
         )
 
     # 2. Validar proprietário
+    usuario = None
     if dados.email_proprietario is not None:
         usuario = db.query(models.Usuario).filter(
             models.Usuario.email == dados.email_proprietario
@@ -45,7 +46,8 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
             nova_disciplina = criar_disciplina(
                 db=db,
                 id_evento=novo_evento.id,
-                disciplina=disciplina
+                disciplina=disciplina,
+                id_professor=usuario.id if usuario else None
             )
 
             # Criar dias vinculados
@@ -80,10 +82,10 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
     
 
 
-def criar_disciplina(db: Session, id_evento: int, disciplina):
+def criar_disciplina(db: Session, id_evento: int, disciplina, id_professor: int):
     nova_disciplina = models.Disciplina(
         id_evento=id_evento,
-        id_professor=disciplina.id_professor,
+        id_professor=id_professor,
         horario=disciplina.horario,
         nome=disciplina.nome
     )
