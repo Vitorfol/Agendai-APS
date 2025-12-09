@@ -5,29 +5,13 @@ from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 from datetime import datetime, timedelta, date
 
-def criar_evento_logica(db: Session, dados, disciplina = None,dias = None):
-    # 1. Validação de Negócio: Datas Coerentes
-    # Não faz sentido o evento terminar antes de começar
-    if dados.data_termino <= dados.data_inicio:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A data de término deve ser posterior à data de início."
-        )
-
-    # 2. Validação de Integridade (Opcional, mas recomendado)
-    # Verificar se o proprietário existe antes de tentar criar
-    if dados.email_proprietario is not None:
-        usuario = db.query(models.Usuario).filter(models.Usuario.email == dados.email_proprietario).first()
-        if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário proprietário não encontrado.")
-
+def criar_evento_logica(db: Session, dados):
     try:
-        # 3. Criação do Objeto Evento
-        # Note que mapeamos os campos do Pydantic (dados) para o SQLAlchemy (models)
-        novo_evento = models.Evento(
+        # Criar EVENTO
+        evento = models.Evento(
+            nome=dados.nome,
+            descricao=dados.descricao,
             id_universidade=dados.id_universidade,
-            nome = dados.nome,
-            descricao = dados.descricao,
             data_inicio=dados.data_inicio,
             data_termino=dados.data_termino,
             recorrencia=dados.recorrencia,
@@ -35,54 +19,44 @@ def criar_evento_logica(db: Session, dados, disciplina = None,dias = None):
             email_proprietario=dados.email_proprietario
         )
 
-        db.add(novo_evento)
-        db.flush()  # Garante que o ID seja gerado
-        if dados.categoria == "Disciplina" and disciplina is not None and dias is not None:
-            nova_disciplina, dias = criar_disciplina_logica(db=db, disciplina=disciplina, dias=dias)
-            nova_disciplina.id_evento = novo_evento.id
-            dias.id_disciplina = novo_evento.id
-            db.add(nova_disciplina)
-            db.add(dias)
-        db.commit() # Salva permanentemente no banco
-        db.refresh(novo_evento) # Recarrega o objeto com o ID gerado pelo banco
-        db.refresh(nova_disciplina) if disciplina is not None else None
-        novo_evento.disciplina = nova_disciplina if disciplina is not None else None
-        novo_evento.disciplina.disciplina_dias = [dias] if disciplina is not None else None
+        db.add(evento)
+        db.flush()  # necessário para obter evento.id
 
-        return novo_evento
+        # Se veio DISCIPLINA → chama função criar_disciplina
+        if dados.disciplina:
+            criar_disciplina(db, evento.id, dados.disciplina)
 
-    except Exception as e:
-        db.rollback() # Desfaz tudo se der erro
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao persistir evento no banco: {str(e)}"
-        )
-    
-
-
-def criar_disciplina_logica(db: Session, disciplina,dias):
-    try:
-        nova_disciplina = models.Disciplina(
-            id_evento=0,  # Será atualizado depois
-            id_professor=disciplina.id_professor,
-            horario=disciplina.horario,
-            nome = disciplina.nome
-        )
-        dias = models.DisciplinaDias(
-            id_disciplina=0,  # Será atualizado depois
-            dia = dias.dia
-
-        )
-    
-
-        return nova_disciplina,dias
+        # Finaliza tudo
+        db.commit()
+        db.refresh(evento)
+        return evento
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao persistir disciplina no banco: {str(e)}"
-        )
+        raise Exception(f"Erro ao persistir evento no banco: {e}")
+    
+
+
+def criar_disciplina(db: Session, id_evento: int, disc_data):
+    # Criar disciplina
+    disciplina = models.Disciplina(
+        id_evento=id_evento,
+        id_professor=disc_data.id_professor,
+        horario=disc_data.horario,
+        nome=disc_data.nome
+    )
+    db.add(disciplina)
+    db.flush()
+
+    # Criar dias
+    if hasattr(disc_data, "dias") and disc_data.dias:
+        for dia in disc_data.dias:
+            db.add(models.DisciplinaDias(
+                id_disciplina=id_evento,  # chave correta
+                dia=dia.dia
+            ))
+
+    return disciplina
     
 def listar_ocorrencias_por_evento(db, id_evento):
     try:

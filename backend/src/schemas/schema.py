@@ -107,7 +107,6 @@ class EventoResponse(EventoBase):
 # DISCIPLINA
 # ==========================================
 class DisciplinaBase(BaseModel):
-    id_evento: int # PK e FK ao mesmo tempo
     id_professor: int
     horario: str = Field(..., max_length=10)
     nome: str = Field(..., max_length=255)
@@ -116,6 +115,7 @@ class DisciplinaCreate(DisciplinaBase):
     pass
 
 class DisciplinaResponse(DisciplinaBase):
+    id_evento: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -123,13 +123,13 @@ class DisciplinaResponse(DisciplinaBase):
 # DIAS DA DISCIPLINA
 # ==========================================
 class DiasDisciplinaBase(BaseModel):
-    id_disciplina: int
     dia: str
 
 class DiasDisciplinaCreate(DiasDisciplinaBase):
     pass
 
 class DiasDisciplinaResponse(DiasDisciplinaBase):
+    id_disciplina: int
     model_config = ConfigDict(from_attributes=True)
 
 
