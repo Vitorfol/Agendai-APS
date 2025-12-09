@@ -106,8 +106,6 @@ class EventoResponse(EventoBase):
 # DISCIPLINA
 # ==========================================
 class DisciplinaBase(BaseModel):
-    id_evento: int # PK e FK ao mesmo tempo
-    id_professor: int
     horario: str = Field(..., max_length=255)
     nome: str = Field(..., max_length=255)
 
