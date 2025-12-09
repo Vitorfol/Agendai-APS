@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import text
+from sqlalchemy import text, func
 from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
@@ -406,3 +406,165 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
     if dias_list is not None:
         info["dias"] = dias_list
     return info
+
+
+def atualizar_ocorrencia_evento_por_data(
+    db: Session, 
+    id_evento: int, 
+    date: date, 
+    payload, 
+    current_user_email: str
+) -> dict:
+    """
+    Atualiza uma ocorrência específica de um evento.
+    
+    Parâmetros:
+        db: Sessão do banco de dados
+        id_evento: ID do evento
+        date: Data da ocorrência a ser atualizada
+        payload: Dados para atualização (OcorrenciaEventoUpdate)
+        current_user_email: Email do usuário autenticado
+    
+    Retorna:
+        Dict com os dados da ocorrência atualizada
+    
+    Raises:
+        HTTPException: Se o evento não existir, usuário não for proprietário, 
+                       ocorrência não existir, ou nenhum campo for fornecido
+    """
+    # 1. Verificar se o evento existe
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento não encontrado."
+        )
+    
+    # 2. Verificar se o usuário atual é o proprietário do evento
+    if evento.email_proprietario != current_user_email:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para atualizar este evento."
+        )
+    
+    # 3. Buscar a ocorrência específica pela data
+    start = datetime(date.year, date.month, date.day)
+    end = start + timedelta(days=1)
+    
+    ocorrencia = db.query(models.OcorrenciaEvento).options(
+        joinedload(models.OcorrenciaEvento.evento)
+        .joinedload(models.Evento.disciplina)
+        .joinedload(models.Disciplina.disciplina_dias)
+    ).filter(
+        models.OcorrenciaEvento.id_evento == id_evento,
+        models.OcorrenciaEvento.data >= start,
+        models.OcorrenciaEvento.data < end
+    ).first()
+    
+    if not ocorrencia:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ocorrência não encontrada para a data especificada."
+        )
+    
+    # 4. Verificar se há pelo menos um campo para atualizar
+    if payload.local is None and payload.data is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nenhum campo fornecido para atualização. Forneça 'local' e/ou 'data'."
+        )
+    
+    # 5. Atualizar os campos fornecidos
+    campos_atualizados = []
+    
+    if payload.local is not None:
+        ocorrencia.local = payload.local
+        campos_atualizados.append("local")
+    
+    if payload.data is not None:
+        # Validar que a nova data está dentro do intervalo do evento
+        if payload.data < evento.data_inicio or payload.data > evento.data_termino:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A nova data deve estar dentro do intervalo do evento."
+            )
+        ocorrencia.data = payload.data
+        campos_atualizados.append("data")
+    
+    # 6. Persistir as mudanças
+    try:
+        db.commit()
+        db.refresh(ocorrencia)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao atualizar ocorrência: {str(e)}"
+        )
+    
+    # 7. Buscar dias da disciplina (se aplicável) para retornar na resposta
+    dias_list = None
+    try:
+        disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+        if disciplina:
+            result = db.execute(text(
+                "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
+                "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
+            ), {"id": disciplina.id_evento})
+            dias_list = [row[0] for row in result.fetchall()]
+    except Exception:
+        dias_list = None
+    
+    # 8. Retornar a ocorrência atualizada formatada
+    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list)
+
+
+def cancelar_ocorrencia_evento_por_data(
+    db: Session,
+    id_evento: int,
+    date: date,
+    current_user_email: str
+) -> dict:
+    """
+    Cancela (deleta) uma ocorrência específica de um evento.
+    Apenas o proprietário do evento pode cancelar suas ocorrências.
+    """
+    # 1. Buscar o evento
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento não encontrado."
+        )
+    
+    # 2. Verificar se o usuário atual é o proprietário do evento
+    if evento.email_proprietario != current_user_email:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para cancelar ocorrências deste evento."
+        )
+    
+    # 3. Buscar a ocorrência específica (comparando apenas a parte DATE do datetime)
+    ocorrencia = db.query(models.OcorrenciaEvento).filter(
+        models.OcorrenciaEvento.id_evento == id_evento,
+        func.date(models.OcorrenciaEvento.data) == date
+    ).first()
+    
+    if not ocorrencia:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ocorrência não encontrada para a data {date}."
+        )
+    
+    # 4. Deletar a ocorrência
+    try:
+        db.delete(ocorrencia)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao cancelar ocorrência: {str(e)}"
+        )
+    
+    return {"message": "Ocorrência cancelada com sucesso."}

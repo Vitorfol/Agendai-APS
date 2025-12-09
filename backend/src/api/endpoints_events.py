@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from ..core.config import settings
 from ..database.connection import get_db 
-from ..services import service_events
+from ..services import service_events, service_auth
 from ..schemas import schema
 from datetime import date
 
@@ -125,3 +125,81 @@ def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depen
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao obter ocorrência: {str(e)}"
         )
+        
+@router.put("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK, response_model_exclude_none=True)
+def atualizar_ocorrencia_evento_data(
+    id_evento: int, 
+    date: date, 
+    payload: schema.OcorrenciaEventoUpdate, 
+    db: Session = Depends(get_db),
+    current_user_email: str = Depends(service_auth.get_current_user_email)
+):
+    """
+    Atualiza o local e/ou data de uma ocorrência específica de um evento.
+    
+    Parâmetros:
+        - id_evento: ID do evento
+        - date: Data da ocorrência a ser atualizada (formato: YYYY-MM-DD)
+        - payload: Dados para atualização (local e/ou data)
+    
+    Apenas o proprietário do evento pode atualizar suas ocorrências.
+    """
+    try:
+        ocorrencia_atualizada = service_events.atualizar_ocorrencia_evento_por_data(
+            db=db,
+            id_evento=id_evento,
+            date=date,
+            payload=payload,
+            current_user_email=current_user_email
+        )
+        return ocorrencia_atualizada
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao atualizar ocorrência: {str(e)}"
+        )
+        
+#curl -X 'PUT' \
+#  'http://localhost:8000/api/events/9/2025-12-01' \
+#  -H 'accept: application/json' \
+#  -H 'Content-Type: application/json' \
+#  -d '{
+#  "local": "string",
+#  "data": "2025-12-09T14:38:52.293Z"
+#}'
+
+@router.delete("/{id_evento}/{date}", status_code=status.HTTP_200_OK)
+def cancelar_ocorrencia_evento_data(
+    id_evento: int, 
+    date: date, 
+    db: Session = Depends(get_db),
+    current_user_email: str = Depends(service_auth.get_current_user_email)
+):
+    """
+    Cancela (deleta) uma ocorrência específica de um evento.
+    
+    Parâmetros:
+        - id_evento: ID do evento
+        - date: Data da ocorrência a ser cancelada (formato: YYYY-MM-DD)
+    
+    Apenas o proprietário do evento pode cancelar suas ocorrências.
+    """
+    try:
+        resultado = service_events.cancelar_ocorrencia_evento_por_data(
+            db=db,
+            id_evento=id_evento,
+            date=date,
+            current_user_email=current_user_email
+        )
+        return resultado
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao cancelar ocorrência: {str(e)}"
+        )
+    
+    

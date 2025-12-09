@@ -164,6 +164,16 @@ class OcorrenciaEventoBase(BaseModel):
 class OcorrenciaEventoCreate(OcorrenciaEventoBase):
     pass
 
+class OcorrenciaEventoUpdate(BaseModel):
+    """Schema para atualização de ocorrência de evento.
+    
+    Permite atualizar local e/ou data de uma ocorrência específica.
+    Todos os campos são opcionais para permitir atualizações parciais.
+    Para deletar uma ocorrência, use o endpoint DELETE apropriado.
+    """
+    local: Optional[str] = Field(None, max_length=255)
+    data: Optional[datetime] = None
+
 # Ocorrência: resposta pública (sem ids, flat dict)
 class OcorrenciaEventoResponse(BaseModel):
     """Resposta pública de uma ocorrência (flat, sem nesting).
@@ -173,7 +183,7 @@ class OcorrenciaEventoResponse(BaseModel):
         para eventos do tipo "Disciplina" contém o campo `horario` da `Disciplina` (por exemplo "AB"/"CD").
     - `recorrencia` e `dias` são opcionais; `dias` é preenchido para eventos do tipo disciplina.
     """
-    local: str = Field(..., max_length=255)
+    local: Optional[str] = Field(None, max_length=255)
     data: date
     hora: Optional[str] = None
     nome: Optional[str] = None
