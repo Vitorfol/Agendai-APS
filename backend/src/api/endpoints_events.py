@@ -8,22 +8,26 @@ from datetime import date
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Eventos"])
 
-@router.post("/", 
-             response_model=schema.EventoResponse, 
-             status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", 
+    response_model=schema.EventoResponse,
+    status_code=status.HTTP_201_CREATED
+)
 def criar_evento(
-    dados: schema.EventoCreate,
-    disciplina: schema.DisciplinaCreate = None,
-    dias: schema.DiasDisciplinaCreate = None,
+    payload: schema.EventoComplexoCreate,
     db: Session = Depends(get_db)
 ):
     try:
-        # Delega a lógica para o service
-        novo_evento = service_events.criar_evento_logica(db=db, dados=dados, disciplina=disciplina, dias = dias)
+        novo_evento = service_events.criar_evento_logica(
+            db=db,
+            dados=payload.evento,
+            disciplina=payload.disciplina,
+            dias=payload.dias
+        )
         return novo_evento
-        
-    except HTTPException as e:
-        raise e
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

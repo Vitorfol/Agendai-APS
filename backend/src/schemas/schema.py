@@ -102,7 +102,6 @@ class EventoResponse(EventoBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-
 # ==========================================
 # DISCIPLINA
 # ==========================================
@@ -131,6 +130,11 @@ class DiasDisciplinaCreate(DiasDisciplinaBase):
 
 class DiasDisciplinaResponse(DiasDisciplinaBase):
     model_config = ConfigDict(from_attributes=True)
+
+class EventoComplexoCreate(BaseModel):
+    evento: EventoCreate
+    disciplina: Optional[DisciplinaCreate] = None
+    dias: Optional[List[DiasDisciplinaCreate]] = None
 
 
 # ==========================================
