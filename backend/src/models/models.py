@@ -176,7 +176,6 @@ class Convidado(Base):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_evento = db.Column(db.Integer, ForeignKey("evento.id"))
     id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"))
-    status_vinculo = db.Column(db.String(255))
 
     # Relationships
     evento = relationship("Evento", back_populates="convidados")
