@@ -165,7 +165,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     ocorrencias = []
 
     # Evento único
-    if not evento.recorrencia == "unico":
+    if evento.recorrencia == "unico":
         ocorrencia = models.OcorrenciaEvento(
             id_evento=evento.id,
             data=evento.data_inicio,
