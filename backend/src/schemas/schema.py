@@ -108,7 +108,7 @@ class EventoResponse(EventoBase):
 class DisciplinaBase(BaseModel):
     id_evento: int # PK e FK ao mesmo tempo
     id_professor: int
-    horario: str = Field(..., max_length=10)
+    horario: str = Field(..., max_length=255)
     nome: str = Field(..., max_length=255)
 
 class DisciplinaCreate(DisciplinaBase):

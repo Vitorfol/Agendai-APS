@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 from datetime import datetime, timedelta, date
+from ..core.constants import HORARIOS, DIAS_MAP
 
 def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
 
@@ -58,8 +59,15 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
 
             novo_evento.disciplina = nova_disciplina
 
+        if novo_evento.categoria != "Disciplina":
+            # Gerar ocorrências para eventos que não são disciplinas
+            gerar_ocorrencias_evento(db, novo_evento)
+        else:
+            gerar_ocorrencias_disciplina(db, novo_evento, novo_evento.disciplina)
+
         db.commit()
         db.refresh(novo_evento)
+
         return novo_evento
 
     except Exception as e:
@@ -84,6 +92,138 @@ def criar_disciplina(db: Session, id_evento: int, disciplina):
     db.flush()  # necessário para persistir antes de criar os dias
 
     return nova_disciplina
+
+def parse_horario(horario: str):
+    dias, blocos, turno = horario.split("-")
+
+    return {
+        "dias_semana": [d for d in dias],  # mantém como string
+        "blocos": list(blocos),
+        "turno": turno
+    }
+
+def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina: models.Disciplina):
+    """
+    Gera ocorrências semanais dentro do intervalo do EVENTO (não do semestre).
+    """
+
+    info = parse_horario(disciplina.horario)
+
+    dias_semana = info["dias_semana"]
+    blocos = info["blocos"]
+    turno = info["turno"]
+
+    data_inicio = evento.data_inicio
+    data_fim = evento.data_termino
+
+    ocorrencias = []
+
+    for dia_str in dias_semana:
+        weekday = DIAS_MAP[dia_str]   # agora funciona
+
+        # encontrar a primeira data válida
+        dt = data_inicio
+        while dt.weekday() != weekday:
+            dt += timedelta(days=1)
+
+        # gerar todas as ocorrências semanais
+        while dt <= data_fim:
+
+            hora_inicio = HORARIOS[turno][blocos[0]][0]
+
+            dt_inicio = datetime.combine(dt.date(), hora_inicio)
+
+            ocorrencia = models.OcorrenciaEvento(
+                id_evento=evento.id,
+                data=dt_inicio,
+            )
+
+            db.add(ocorrencia)
+            ocorrencias.append(ocorrencia)
+
+            dt += timedelta(days=7)
+
+    return ocorrencias
+
+from datetime import timedelta
+
+def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
+    """
+    Gera ocorrências para o evento dentro do intervalo [data_inicio, data_termino].
+    Tipos de recorrência:
+        - "diario": todos os dias
+        - "diario_uteis": apenas dias úteis (segunda a sexta)
+        - "semanal": mesma data do dia da semana do início
+    """
+
+    if evento.data_inicio > evento.data_termino:
+        raise HTTPException(
+            status_code=500,
+            detail="Inconsistência detectada: data_inicio > data_termino."
+        )
+
+    ocorrencias = []
+
+    # Evento único
+    if not evento.recorrencia == "unico":
+        ocorrencia = models.OcorrenciaEvento(
+            id_evento=evento.id,
+            data=evento.data_inicio,
+            local=None
+        )
+        db.add(ocorrencia)
+        ocorrencias.append(ocorrencia)
+        return ocorrencias
+
+    # Evento recorrente
+    data_atual = evento.data_inicio
+
+    if evento.recorrencia == "diario":
+        delta = timedelta(days=1)
+        while data_atual <= evento.data_termino:
+            ocorrencia = models.OcorrenciaEvento(
+                id_evento=evento.id,
+                data=data_atual,
+                local=None
+            )
+            db.add(ocorrencia)
+            ocorrencias.append(ocorrencia)
+            data_atual += delta
+
+    elif evento.recorrencia == "diario_uteis":
+        while data_atual <= evento.data_termino:
+            if data_atual.weekday() < 5:  # 0=segunda, 4=sexta
+                ocorrencia = models.OcorrenciaEvento(
+                    id_evento=evento.id,
+                    data=data_atual,
+                    local=None
+                )
+                db.add(ocorrencia)
+                ocorrencias.append(ocorrencia)
+            data_atual += timedelta(days=1)
+
+    elif evento.recorrencia == "semanal":
+        weekday_inicial = data_atual.weekday()
+        while data_atual <= evento.data_termino:
+            if data_atual.weekday() == weekday_inicial:
+                ocorrencia = models.OcorrenciaEvento(
+                    id_evento=evento.id,
+                    data=data_atual,
+                    local=None
+                )
+                db.add(ocorrencia)
+                ocorrencias.append(ocorrencia)
+            data_atual += timedelta(days=1)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo de recorrência desconhecido: {evento.recorrencia}"
+        )
+
+    return ocorrencias
+
+
     
 def listar_ocorrencias_por_evento(db, id_evento):
     try:
