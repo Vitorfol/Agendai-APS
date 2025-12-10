@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 # ==========================================
 # UNIVERSIDADE
@@ -102,14 +102,11 @@ class EventoResponse(EventoBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-
 # ==========================================
 # DISCIPLINA
 # ==========================================
 class DisciplinaBase(BaseModel):
-    id_evento: int # PK e FK ao mesmo tempo
-    id_professor: int
-    horario: str = Field(..., max_length=10)
+    horario: str = Field(..., max_length=255)
     nome: str = Field(..., max_length=255)
 
 class DisciplinaCreate(DisciplinaBase):
@@ -131,6 +128,10 @@ class DiasDisciplinaCreate(DiasDisciplinaBase):
 
 class DiasDisciplinaResponse(DiasDisciplinaBase):
     model_config = ConfigDict(from_attributes=True)
+
+class EventoComplexoCreate(BaseModel):
+    evento: EventoCreate
+    disciplina: Optional[DisciplinaCreate] = None
 
 
 # ==========================================
@@ -160,8 +161,35 @@ class OcorrenciaEventoBase(BaseModel):
 class OcorrenciaEventoCreate(OcorrenciaEventoBase):
     pass
 
-class OcorrenciaEventoResponse(OcorrenciaEventoBase):
-    id: int
+class OcorrenciaEventoUpdate(BaseModel):
+    """Schema para atualização de ocorrência de evento.
+    
+    Permite atualizar local e/ou data de uma ocorrência específica.
+    Todos os campos são opcionais para permitir atualizações parciais.
+    Para deletar uma ocorrência, use o endpoint DELETE apropriado.
+    """
+    local: Optional[str] = Field(None, max_length=255)
+    data: Optional[datetime] = None
+
+# Ocorrência: resposta pública (sem ids, flat dict)
+class OcorrenciaEventoResponse(BaseModel):
+    """Resposta pública de uma ocorrência (flat, sem nesting).
+
+    - `data` agora é apenas a data (dia/mês/ano).
+    - `hora` é uma string opcional: para eventos normais contém o horário da ocorrência (HH:MM:SS),
+        para eventos do tipo "Disciplina" contém o campo `horario` da `Disciplina` (por exemplo "AB"/"CD").
+    - `recorrencia` e `dias` são opcionais; `dias` é preenchido para eventos do tipo disciplina.
+    - `is_proprietario` indica se o usuário autenticado é o dono do evento.
+    """
+    local: Optional[str] = Field(None, max_length=255)
+    data: date
+    hora: Optional[str] = None
+    nome: Optional[str] = None
+    categoria: Optional[str] = None
+    descricao: Optional[str] = None
+    recorrencia: Optional[str] = None
+    dias: Optional[List[str]] = None
+    is_proprietario: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -188,13 +216,21 @@ class NotificacaoResponse(NotificacaoBase):
 class ConvidadoBase(BaseModel):
     id_evento: int
     id_usuario: int
-    status_vinculo: str
 
 class ConvidadoCreate(ConvidadoBase):
     pass
 
 class ConvidadoResponse(ConvidadoBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Response usado pelo endpoint de listar participantes (combina usuário + vínculo)
+class ParticipantResponse(BaseModel):
+    id_convidado: int
+    id_usuario: int
+    nome: Optional[str] = None
+    email: Optional[EmailStr] = None
     model_config = ConfigDict(from_attributes=True)
 
 

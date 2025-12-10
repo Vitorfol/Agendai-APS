@@ -123,7 +123,7 @@ class Disciplina(Base):
     
     id_evento = db.Column(db.Integer, ForeignKey("evento.id"), primary_key=True)
     id_professor = db.Column(db.Integer, ForeignKey("professor.id_usuario"))
-    horario = db.Column(db.String(10))
+    horario = db.Column(db.String(255))
     nome = db.Column(db.String(255))
 
     # Relationships
@@ -136,8 +136,9 @@ class Disciplina(Base):
 class DisciplinaDias(Base):
     __tablename__ = "disciplina_dias"
     
-    id_disciplina = db.Column(db.Integer, ForeignKey("disciplina.id_evento"), primary_key=True)
-    dia = db.Column(db.String(10)) 
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_disciplina = db.Column(db.Integer, ForeignKey("disciplina.id_evento"), nullable=False)
+    dia = db.Column(db.String(10), nullable=False)
 
     # Relationships
     disciplina = relationship("Disciplina", back_populates="disciplina_dias")
@@ -175,7 +176,6 @@ class Convidado(Base):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     id_evento = db.Column(db.Integer, ForeignKey("evento.id"))
     id_usuario = db.Column(db.Integer, ForeignKey("usuario.id"))
-    status_vinculo = db.Column(db.String(255))
 
     # Relationships
     evento = relationship("Evento", back_populates="convidados")

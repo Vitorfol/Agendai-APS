@@ -117,18 +117,31 @@ def popular_banco():
         session.add(ocorrencia)
         session.flush()
 
-        # Notificação para um aluno
-        notificacao = Notificacao(id_usuario=user_aluno1.id, data=datetime.now(), mensagem="Aula de BD I vai começar", evento=str(evento_aula.id))
-        session.add(notificacao)
+    notificacao = Notificacao(
+        id_usuario=user_aluno1.id,          # Mudança: idUsuario -> id_usuario
+        data=datetime.now(),
+        mensagem="Aula de BD I começou",
+        evento="Banco de Dados I" # Mudança: atributo 'evento' virou 'mensagem' na classe
+    )
 
-        # Convidado para palestra
-        convidado = Convidado(id_evento=evento_palestra.id, id_usuario=user_convidado.id, status_vinculo="Confirmado")
-        session.add(convidado)
+    convidado = Convidado(
+        id_evento=evento_palestra.id,       # Mudança: idEvento -> id_evento
+        id_usuario=user_convidado.id        # Mudança: idUsuario -> id_usuario
+    )
+    session.add_all([notificacao, convidado])
 
-        # Presencas (id_aluno = aluno.id_usuario)
-        pres1 = Presenca(id_ocorrencia_evento=ocorrencia.id, id_aluno=aluno1.id_usuario, presente=True)
-        pres2 = Presenca(id_ocorrencia_evento=ocorrencia.id, id_aluno=aluno2.id_usuario, presente=False)
-        session.add_all([pres1, pres2])
+    # 7. Presença
+    presenca1 = Presenca(
+        id_ocorrencia_evento=ocorrencia.id, # Mudança: idOcorrenciaEvento -> id_ocorrencia_evento
+        id_aluno=aluno1.id_usuario,         # Mudança: idAluno -> id_aluno
+        presente=True
+    )
+    presenca2 = Presenca(
+        id_ocorrencia_evento=ocorrencia.id,
+        id_aluno=aluno2.id_usuario,
+        presente=False
+    )
+    session.add_all([presenca1, presenca2])
 
         # commit final
         session.commit()
