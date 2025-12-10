@@ -359,14 +359,16 @@ def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date, cu
     # os dias armazenados no banco.
     dias_list = None
     try:
-        disciplina = getattr(ocorrencia.evento, 'disciplina', None)
-        if disciplina:
-            # Ordena os dias na ordem da semana usando FIELD para garantir ordem previsível
-            result = db.execute(text(
-                "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
-                "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
-            ), {"id": disciplina.id_evento})
-            dias_list = [row[0] for row in result.fetchall()]
+        # Verificar se a categoria do evento é "Disciplina" antes de buscar os dias
+        if ocorrencia.evento.categoria and ocorrencia.evento.categoria.lower() == 'disciplina':
+            disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+            if disciplina:
+                # Ordena os dias na ordem da semana usando FIELD para garantir ordem previsível
+                result = db.execute(text(
+                    "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
+                    "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
+                ), {"id": disciplina.id_evento})
+                dias_list = [row[0] for row in result.fetchall()]
     except Exception:
         dias_list = None
 
@@ -515,18 +517,23 @@ def atualizar_ocorrencia_evento_por_data(
     # 7. Buscar dias da disciplina (se aplicável) para retornar na resposta
     dias_list = None
     try:
-        disciplina = getattr(ocorrencia.evento, 'disciplina', None)
-        if disciplina:
-            result = db.execute(text(
-                "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
-                "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
-            ), {"id": disciplina.id_evento})
-            dias_list = [row[0] for row in result.fetchall()]
+        # Verificar se a categoria do evento é "Disciplina" antes de buscar os dias
+        if ocorrencia.evento.categoria and ocorrencia.evento.categoria.lower() == 'disciplina':
+            disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+            if disciplina:
+                result = db.execute(text(
+                    "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
+                    "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
+                ), {"id": disciplina.id_evento})
+                dias_list = [row[0] for row in result.fetchall()]
     except Exception:
         dias_list = None
     
-    # 8. Retornar a ocorrência atualizada formatada
-    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list)
+    # 8. Verificar se o usuário atual é o proprietário
+    is_proprietario = evento.email_proprietario == current_user_email
+    
+    # 9. Retornar a ocorrência atualizada formatada
+    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list, is_proprietario=is_proprietario)
 
 
 def cancelar_ocorrencia_evento_por_data(
