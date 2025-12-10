@@ -6,7 +6,7 @@ from sqlalchemy import delete
 from datetime import datetime, timedelta, date
 from ..core.constants import HORARIOS, DIAS_MAP
 
-def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
+def criar_evento_logica(db: Session, dados, disciplina=None):
 
     # 1. Validar datas
     if dados.data_termino <= dados.data_inicio:
@@ -50,15 +50,6 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
                 id_professor=usuario.id if usuario else None
             )
 
-            # Criar dias vinculados
-            if dias:
-                dias_criados = criar_dias_disciplina(
-                    db=db,
-                    id_disciplina=nova_disciplina.id_evento,
-                    dias=dias
-                )
-                nova_disciplina.disciplina_dias = dias_criados
-
             novo_evento.disciplina = nova_disciplina
 
         if novo_evento.categoria != "Disciplina":
@@ -78,9 +69,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, dias: list = None):
             status_code=500,
             detail=f"Erro ao persistir evento no banco: {str(e)}"
         )
-
     
-
 
 def criar_disciplina(db: Session, id_evento: int, disciplina, id_professor: int):
     nova_disciplina = models.Disciplina(
@@ -122,6 +111,7 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
 
     for dia_str in dias_semana:
         weekday = DIAS_MAP[dia_str]   # agora funciona
+        criar_dias_disciplina(db, evento.id, dia_str)
 
         # encontrar a primeira data válida
         dt = data_inicio
@@ -147,7 +137,17 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
 
     return ocorrencias
 
-from datetime import timedelta
+def criar_dias_disciplina(db, id_disciplina: int, dia: str):
+            dia_disciplina = models.DisciplinaDias(
+                id_disciplina=id_disciplina,
+                dia=dia
+            )
+            db.add(dia_disciplina)
+            return dia_disciplina
+
+
+
+
 
 def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     """

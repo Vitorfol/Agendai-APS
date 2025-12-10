@@ -132,7 +132,6 @@ class DiasDisciplinaResponse(DiasDisciplinaBase):
 class EventoComplexoCreate(BaseModel):
     evento: EventoCreate
     disciplina: Optional[DisciplinaCreate] = None
-    dias: Optional[List[DiasDisciplinaCreate]] = None
 
 
 # ==========================================
