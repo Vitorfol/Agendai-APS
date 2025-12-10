@@ -22,9 +22,11 @@ def criar_evento(
         novo_evento = service_events.criar_evento_logica(
             db=db,
             dados=payload.evento,
-            disciplina=payload.disciplina,
-            dias=payload.dias
+            disciplina=payload.disciplina
         )
+
+   
+
         return novo_evento
 
     except HTTPException:

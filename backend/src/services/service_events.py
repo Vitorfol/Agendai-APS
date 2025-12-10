@@ -6,6 +6,7 @@ from sqlalchemy import delete
 from datetime import datetime, timedelta, date
 from ..core.constants import HORARIOS, DIAS_MAP
 from ..schemas.jwt import TokenPayload
+from ..services.service_notifications import notificar_usuarios_em_massa
 
 def criar_evento_logica(db: Session, dados, disciplina=None):
 
@@ -60,8 +61,29 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             gerar_ocorrencias_disciplina(db, novo_evento, novo_evento.disciplina)
 
         db.commit()
-        db.refresh(novo_evento)
-
+        db.refresh(novo_evento)        # --- NOTIFICAR ALUNOS DO CURSO ---
+        if  dados.categoria == "Disciplina" and disciplina:
+            disciplina = db.query(models.Disciplina).filter(
+                models.Disciplina.id_evento == novo_evento.id
+            ).first()
+            if disciplina:
+                # Buscar alunos do curso vinculado à disciplina
+                curso_disc = db.query(models.CursoDisciplina).filter(
+                    models.CursoDisciplina.id_disciplina == disciplina.id_evento
+                ).first()
+                if curso_disc:
+                    alunos = db.query(models.Aluno).filter(
+                        models.Aluno.id_curso == curso_disc.id_curso
+                    ).all()
+                    ids_alunos = [aluno.id_usuario for aluno in alunos]
+                    
+                    mensagem = f"Nova aula criada: {novo_evento.nome} em {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}"
+                    notificar_usuarios_em_massa(
+                        db=db,
+                        ids_usuarios=ids_alunos,
+                        mensagem=mensagem,
+                        id_evento=novo_evento.id
+                    )     
         return novo_evento
 
     except Exception as e:
