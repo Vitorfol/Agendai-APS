@@ -107,6 +107,7 @@ class Evento(Base):
     data_inicio = db.Column(db.DateTime)
     data_termino = db.Column(db.DateTime)
     recorrencia = db.Column(db.String(255))
+    local_padrao = db.Column(db.String(255))
     categoria = db.Column(db.String(255))
     email_proprietario = db.Column(db.String(255), ForeignKey("usuario.email")) # idproprietário -> id_proprietario
 

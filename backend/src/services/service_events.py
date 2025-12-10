@@ -34,6 +34,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             data_inicio=dados.data_inicio,
             data_termino=dados.data_termino,
             recorrencia=dados.recorrencia,
+            local_padrao=dados.local_padrao,
             categoria=dados.categoria,
             email_proprietario=dados.email_proprietario
         )
@@ -129,6 +130,7 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
             ocorrencia = models.OcorrenciaEvento(
                 id_evento=evento.id,
                 data=dt_inicio,
+                local = evento.local_padrao
             )
 
             db.add(ocorrencia)
@@ -172,7 +174,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
         ocorrencia = models.OcorrenciaEvento(
             id_evento=evento.id,
             data=evento.data_inicio,
-            local=None
+            local=evento.local_padrao
         )
         db.add(ocorrencia)
         ocorrencias.append(ocorrencia)

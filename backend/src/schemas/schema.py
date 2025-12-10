@@ -91,6 +91,7 @@ class EventoBase(BaseModel):
     id_universidade: int
     data_inicio: datetime
     data_termino: datetime
+    local_padrao: Optional[str] = None
     recorrencia: Optional[str] = None
     categoria: Optional[str] = None
     email_proprietario: Optional[str] = None # ID do Usuário dono
