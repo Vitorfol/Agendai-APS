@@ -14,7 +14,7 @@ echo ""
 API_URL="http://localhost:8000/api"
 EMAIL="contato@uece.br"
 PASSWORD="dedelbrabo"
-ID_EVENTO=11
+ID_EVENTO=22
 DATA_OCORRENCIA="2025-12-15"
 
 # Cores para output

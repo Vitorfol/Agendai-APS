@@ -5,6 +5,7 @@ from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 from datetime import datetime, timedelta, date
 from ..core.constants import HORARIOS, DIAS_MAP
+from ..schemas.jwt import TokenPayload
 
 def criar_evento_logica(db: Session, dados, disciplina=None):
 
@@ -570,3 +571,287 @@ def cancelar_ocorrencia_evento_por_data(
         )
     
     return {"message": "Ocorrência cancelada com sucesso."}
+
+
+# ========================================
+# GERENCIAMENTO DE CONVIDADOS
+
+def adicionar_participante_evento(
+    db: Session, 
+    id_evento: int, 
+    email_usuario: str, 
+    current_user: TokenPayload
+):
+    """
+    Adiciona um ou múltiplos usuários como convidados de um evento.
+    
+    Suporta 3 tipos de convites:
+    1. todos@<dominio>.br - Convida todos os usuários com @<dominio> no email
+    2. email_curso@<dominio>.br - Convida todos os alunos do curso (busca curso.email)
+    3. email@individual.br - Convida um usuário específico
+    
+    Args:
+        db: Sessão do banco de dados
+        id_evento: ID do evento
+        email_usuario: Email ou padrão de email para convite
+        current_user: Token payload do usuário autenticado
+    
+    Returns:
+        Dict com estatísticas: total adicionado, já existentes, e lista de adicionados
+    
+    Raises:
+        HTTPException: Se o evento não existir, usuário não for proprietário, etc.
+    """
+    # 1. Verificar se o evento existe
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento não encontrado."
+        )
+    
+    # 2. Extrair informações do token do usuário atual
+    current_user_email = getattr(current_user, 'sub', None)
+    current_user_tag = getattr(current_user, 'tag', None)
+
+    # 3. Verificar se quem está fazendo a requisição é o proprietário do evento
+    if evento.email_proprietario != current_user_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Apenas o proprietário do evento pode adicionar participantes."
+        )
+    
+    # 4. Buscar convidados já existentes para evitar duplicatas
+    convidados_existentes = db.query(models.Convidado.id_usuario).filter(
+        models.Convidado.id_evento == id_evento
+    ).all()
+    ids_existentes = {c.id_usuario for c in convidados_existentes}
+    
+    # 5. Determinar tipo de convite e buscar usuários
+    usuarios_para_convidar = []
+    
+    # CASO 1: todos@<dominio> - convida todos com esse domínio no email
+    if email_usuario.lower().startswith("todos@"):
+        dominio_parte = email_usuario.split("@", 1)[1]  # ex: "uece.br"
+        dominio_busca = "@" + dominio_parte.split(".")[0]  # ex: "@uece"
+        
+        usuarios_para_convidar = db.query(models.Usuario).filter(
+            models.Usuario.email.contains(dominio_busca)
+        ).all()
+        
+        if not usuarios_para_convidar:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Nenhum usuário encontrado com '{dominio_busca}' no email."
+            )
+    
+    # CASO 2: email de curso - convida todos alunos do curso
+    else:
+        curso = db.query(models.Curso).filter(models.Curso.email == email_usuario).first()
+        
+        if curso:
+            # Buscar todos os alunos do curso e seus usuários
+            alunos = db.query(models.Aluno).filter(
+                models.Aluno.id_curso == curso.id
+            ).all()
+            
+            if not alunos:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Curso '{curso.nome}' encontrado mas não possui alunos cadastrados."
+                )
+            
+            # Buscar os usuários dos alunos
+            ids_usuarios_alunos = [aluno.id_usuario for aluno in alunos]
+            usuarios_para_convidar = db.query(models.Usuario).filter(
+                models.Usuario.id.in_(ids_usuarios_alunos)
+            ).all()
+        
+        # CASO 3: email individual
+        else:
+            usuario_individual = db.query(models.Usuario).filter(
+                models.Usuario.email == email_usuario
+            ).first()
+            
+            if not usuario_individual:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuário não encontrado."
+                )
+            
+            usuarios_para_convidar = [usuario_individual]
+    
+    # 6. Filtrar usuários que já são convidados e preparar bulk insert
+    novos_convidados = []
+    ja_convidados = []
+    
+    for usuario in usuarios_para_convidar:
+        if usuario.id in ids_existentes:
+            ja_convidados.append({
+                "id_usuario": usuario.id,
+                "nome": usuario.nome,
+                "email": usuario.email
+            })
+        else:
+            novos_convidados.append(
+                models.Convidado(
+                    id_evento=id_evento,
+                    id_usuario=usuario.id
+                )
+            )
+    
+    # 7. Inserir novos convidados em batch
+    try:
+        if novos_convidados:
+            db.bulk_save_objects(novos_convidados)
+            db.commit()
+        
+        # Montar resposta
+        adicionados = []
+        for convidado in novos_convidados:
+            usuario = next((u for u in usuarios_para_convidar if u.id == convidado.id_usuario), None)
+            if usuario:
+                adicionados.append({
+                    "id_usuario": usuario.id,
+                    "nome": usuario.nome,
+                    "email": usuario.email
+                })
+        
+        return {
+            "message": f"{len(adicionados)} participante(s) adicionado(s) com sucesso.",
+            "total_adicionados": len(adicionados),
+            "total_ja_existentes": len(ja_convidados),
+            "adicionados": adicionados,
+            "ja_existentes": ja_convidados
+        }
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao adicionar participantes: {str(e)}"
+        )
+
+
+def remover_participante_evento(
+    db: Session,
+    id_evento: int,
+    email_usuario: str,
+    current_user: TokenPayload
+):
+    """
+    Remove um usuário da lista de convidados de um evento.
+    
+    Args:
+        db: Sessão do banco de dados
+        id_evento: ID do evento
+        email_convidado: Email do usuário a ser removido
+        current_user_email: Email do usuário que está fazendo a requisição
+    
+    Returns:
+        Mensagem de sucesso
+    
+    Raises:
+        HTTPException: Se o evento não existir, se o usuário não for o proprietário,
+                      ou se o convidado não estiver na lista
+    """
+    # 1. Verificar se o evento existe
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento não encontrado."
+        )
+    
+    # 2. Extrair informações do token do usuário atual
+    current_user_email = getattr(current_user, 'sub', None)
+    current_user_tag = getattr(current_user, 'tag', None)
+
+    # 3. Verificar se quem está fazendo a requisição é o proprietário do evento
+    if evento.email_proprietario != current_user_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Apenas o proprietário do evento pode remover participantes."
+        )
+
+    # TODO: Implementar verificação de privilégios para universidades
+    # Se current_user.tag == 'universidade' permitir operações privilegiadas
+    # (por enquanto, não há comportamento especial)
+    
+    # 3. Buscar o usuário convidado
+    usuario_convidado = db.query(models.Usuario).filter(
+        models.Usuario.email == email_usuario
+    ).first()
+    if not usuario_convidado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
+        )
+    
+    # 4. Buscar o convidado
+    convidado = db.query(models.Convidado).filter(
+        models.Convidado.id_evento == id_evento,
+        models.Convidado.id_usuario == usuario_convidado.id
+    ).first()
+    
+    if not convidado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não é participante deste evento."
+        )
+    
+    # 5. Remover o convidado
+    try:
+        db.delete(convidado)
+        db.commit()
+        
+        return {"message": "Participante removido com sucesso."}
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao remover participante: {str(e)}"
+        )
+
+
+def listar_participantes_evento(db: Session, id_evento: int):
+    """
+    Lista todos os participantes (convidados) de um evento.
+    
+    Args:
+        db: Sessão do banco de dados
+        id_evento: ID do evento
+    
+    Returns:
+        Lista de convidados com informações do usuário
+    
+    Raises:
+        HTTPException: Se o evento não existir
+    """
+    # 1. Verificar se o evento existe
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento não encontrado."
+        )
+    
+    # 2. Buscar todos os convidados do evento com eager loading do usuário
+    convidados = db.query(models.Convidado).options(
+        joinedload(models.Convidado.usuario)
+    ).filter(
+        models.Convidado.id_evento == id_evento
+    ).all()
+    
+    # 3. Formatar resposta com informações dos usuários
+    participantes = []
+    for convidado in convidados:
+        participantes.append({
+            "id_convidado": convidado.id,
+            "id_usuario": convidado.usuario.id,
+            "nome": convidado.usuario.nome,
+            "email": convidado.usuario.email
+        })
+    
+    return participantes

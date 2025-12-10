@@ -213,13 +213,21 @@ class NotificacaoResponse(NotificacaoBase):
 class ConvidadoBase(BaseModel):
     id_evento: int
     id_usuario: int
-    status_vinculo: str
 
 class ConvidadoCreate(ConvidadoBase):
     pass
 
 class ConvidadoResponse(ConvidadoBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Response usado pelo endpoint de listar participantes (combina usuário + vínculo)
+class ParticipantResponse(BaseModel):
+    id_convidado: int
+    id_usuario: int
+    nome: Optional[str] = None
+    email: Optional[EmailStr] = None
     model_config = ConfigDict(from_attributes=True)
 
 

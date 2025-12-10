@@ -167,8 +167,7 @@ def popular_banco():
 
     convidado = Convidado(
         id_evento=evento_palestra.id,       # Mudança: idEvento -> id_evento
-        id_usuario=user_convidado.id,       # Mudança: idUsuario -> id_usuario
-        status_vinculo="Confirmado"         # Mudança: statusVinculo -> status_vinculo
+        id_usuario=user_convidado.id        # Mudança: idUsuario -> id_usuario
     )
     session.add_all([notificacao, convidado])
 

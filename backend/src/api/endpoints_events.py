@@ -4,6 +4,7 @@ from ..core.config import settings
 from ..database.connection import get_db 
 from ..services import service_events, service_auth
 from ..schemas import schema
+from ..schemas.jwt import TokenPayload
 from datetime import date
 
 router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Eventos"])
@@ -103,6 +104,95 @@ def listar_ocorrencias_usuario(id_user: int, db: Session = Depends(get_db)):
             detail=f"Erro interno ao listar ocorrências do usuário: {str(e)}"
         )
         
+@router.post("/{id_evento}/participants", status_code=status.HTTP_200_OK)
+def adicionar_participante_evento(
+    id_evento: int, 
+    email_usuario: str,
+    db: Session = Depends(get_db),
+    current_user: TokenPayload = Depends(service_auth.get_current_user)
+):
+    """
+    Adiciona um participante a um evento específico.
+
+    Parâmetros:
+        - id_evento: ID do evento
+        - email_usuario: Email do usuário a ser adicionado como participante
+
+    Apenas o proprietário do evento pode adicionar participantes.
+    """
+    try:
+        resultado = service_events.adicionar_participante_evento(
+            db=db,
+            id_evento=id_evento,
+            email_usuario=email_usuario,
+            current_user=current_user
+        )
+        return resultado
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao adicionar participante: {str(e)}"
+        )
+        
+@router.delete("/{id_evento}/participants", status_code=status.HTTP_200_OK)
+def remover_participante_evento(
+    id_evento: int, 
+    email_usuario: str,
+    db: Session = Depends(get_db),
+    current_user: TokenPayload = Depends(service_auth.get_current_user)
+):
+    """
+    Remove um participante de um evento específico.
+
+    Parâmetros:
+        - id_evento: ID do evento
+        - email_usuario: Email do usuário a ser removido como participante
+
+    Apenas o proprietário do evento pode remover participantes.
+    """
+    try:
+        resultado = service_events.remover_participante_evento(
+            db=db,
+            id_evento=id_evento,
+            email_usuario=email_usuario,
+            current_user=current_user
+        )
+        return resultado
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao remover participante: {str(e)}"
+        )
+        
+@router.get("/{id_evento}/participants", response_model=list[schema.ParticipantResponse], status_code=status.HTTP_200_OK)
+def listar_participantes_evento(
+    id_evento: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todos os participantes de um evento específico.
+
+    Parâmetros:
+        - id_evento: ID do evento
+    """
+    try:
+        participantes = service_events.listar_participantes_evento(
+            db=db,
+            id_evento=id_evento
+        )
+        return participantes
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao listar participantes: {str(e)}"
+        )
+
 @router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK, response_model_exclude_none=True)
 def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depends(get_db)):
     """
