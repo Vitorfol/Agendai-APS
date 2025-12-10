@@ -23,7 +23,6 @@ def criar_evento(
             db=db,
             dados=payload.evento,
             disciplina=payload.disciplina,
-            dias=payload.dias
         )
         return novo_evento
 
