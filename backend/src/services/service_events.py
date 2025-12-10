@@ -328,7 +328,13 @@ def pegar_ocorrencias_evento(db: Session, id_evento: int):
     ocorrencias = db.query(models.OcorrenciaEvento).filter(models.OcorrenciaEvento.id_evento == id_evento).all()
     return ocorrencias
 
-def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) -> dict | None: 
+def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date, current_user_email: str) -> dict | None: 
+    
+    evento = db.query(models.Evento).filter(models.Evento.id == id_evento).first()
+    if not evento:
+        return None
+        
+    is_proprietario = evento.email_proprietario == current_user_email 
     
     start = datetime(date.year, date.month, date.day) 
     end = start + timedelta(days=1)  
@@ -364,10 +370,10 @@ def pegar_ocorrencia_evento_por_data(db: Session, id_evento: int, date: date) ->
     except Exception:
         dias_list = None
 
-    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list)
+    return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list, is_proprietario=is_proprietario)
 
 
-def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list: list[str] | None = None) -> dict:
+def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list: list[str] | None = None, is_proprietario: bool = False) -> dict:
     """
     Função responsável por selecionar e formatar os dados da ocorrência e do evento relacionado.
     Você pode customizar aqui quais campos quer retornar.
@@ -404,6 +410,7 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
         "categoria": ocorrencia.evento.categoria,
         "descricao": ocorrencia.evento.descricao,
         "recorrencia": recorrencia_val,
+        "is_proprietario": is_proprietario
     }
     # incluir 'dias' somente quando existir lista de dias (apenas para Disciplina)
     if dias_list is not None:

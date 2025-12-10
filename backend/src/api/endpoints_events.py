@@ -194,14 +194,14 @@ def listar_participantes_evento(
         )
 
 @router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK, response_model_exclude_none=True)
-def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depends(get_db)):
+def obter_ocorrencia_evento_data(id_evento: int, date: date, db: Session = Depends(get_db), current_user_email: str = Depends(service_auth.get_current_user_email)):
     """
     Obtém a ocorrência de um evento em uma data específica com dados selecionados.
     """
     try:
         # `pegar_ocorrencia_evento_por_data` aceita date/datetime and normalizes internaly,
         # então basta passar o `date` recebido (date-only) diretamente.
-        ocorrencia = service_events.pegar_ocorrencia_evento_por_data(db, id_evento, date)
+        ocorrencia = service_events.pegar_ocorrencia_evento_por_data(db, id_evento, date, current_user_email)
         if not ocorrencia:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

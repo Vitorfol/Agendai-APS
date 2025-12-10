@@ -180,6 +180,7 @@ class OcorrenciaEventoResponse(BaseModel):
     - `hora` é uma string opcional: para eventos normais contém o horário da ocorrência (HH:MM:SS),
         para eventos do tipo "Disciplina" contém o campo `horario` da `Disciplina` (por exemplo "AB"/"CD").
     - `recorrencia` e `dias` são opcionais; `dias` é preenchido para eventos do tipo disciplina.
+    - `is_proprietario` indica se o usuário autenticado é o dono do evento.
     """
     local: Optional[str] = Field(None, max_length=255)
     data: date
@@ -189,6 +190,7 @@ class OcorrenciaEventoResponse(BaseModel):
     descricao: Optional[str] = None
     recorrencia: Optional[str] = None
     dias: Optional[List[str]] = None
+    is_proprietario: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 
