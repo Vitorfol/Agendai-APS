@@ -1,196 +1,149 @@
-import sqlalchemy as db
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timedelta
+# ...existing code...
 import sys
 import os
+from datetime import datetime, timedelta
+from sqlalchemy.orm import sessionmaker
 
-# Configuração de caminhos para importação (mantida do seu original)
+# ajustar path do projeto para imports locais
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
-sys.path.append(project_root)
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
-# Importa os modelos atualizados e a engine
-from src.models.models import *
+from src.models.models import (
+    Universidade, Curso, Usuario, Professor, Aluno, Evento, Disciplina,
+    DisciplinaDias, CursoDisciplina, OcorrenciaEvento, Notificacao,
+    Convidado, Presenca
+)
 from connection import engine
 from src.core.security import pegar_senha_hash
 
 def popular_banco():
-    # Cria a sessão
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    print("--- Iniciando inserção de dados ---")
+    try:
+        print("Iniciando popular_banco()")
 
-    # 1. Criar Universidade
-    univ = Universidade(
-        nome="Universidade Federal de Tecnologia",
-        sigla="UFT",
-        cnpj="12345678000199",
-        email="contato@uft.edu.br",
-        senha=pegar_senha_hash("universidade123")
-    )
-    session.add(univ)
-    session.flush() # Garante que univ.id foi gerado
+        # Universidades
+        u1 = Universidade(
+            nome="Universidade Federal de Tecnologia",
+            sigla="UFT",
+            cnpj="12345678000199",
+            email="contato@uft.edu.br",
+            senha=pegar_senha_hash("universidade123")
+        )
+        u2 = Universidade(
+            nome="Universidade Estadual do Ceará",
+            sigla="UECE",
+            cnpj="12345678000200",
+            email="contato@uece.br",
+            senha=pegar_senha_hash("uece123")
+        )
+        session.add_all([u1, u2])
+        session.flush()  # gera ids
 
-    univ2 = Universidade(
-        nome="Universidade Estadual do Ceará",
-        sigla="UECE",
-        cnpj="12345678000200",
-        email="contato@uece,br",
-        senha=pegar_senha_hash("uece123")
-    )
-    session.add(univ2)
-    session.flush()
+        # Usuários (professor, alunos, convidado)
+        user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111", senha=pegar_senha_hash("senha123"))
+        user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222", senha=pegar_senha_hash("senha123"))
+        user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333", senha=pegar_senha_hash("senha123"))
+        user_convidado = Usuario(nome="Palestrante Externo", email="palestrante@externo.com", cpf="44444444444", senha=pegar_senha_hash("senha123"))
 
-    # 2. Criar Usuarios (Base para Alunos, Professores e Admin)
-    # Adicionando senha padrão (hash) para os usuários de teste
-    user_prof = Usuario(nome="Dr. Roberto Silva", email="roberto@uft.edu.br", cpf="11111111111", senha=pegar_senha_hash("senha123"))
-    user_aluno1 = Usuario(nome="Ana Souza", email="ana.souza@aluno.uft.edu.br", cpf="22222222222", senha=pegar_senha_hash("senha123"))
-    user_aluno2 = Usuario(nome="Carlos Lima", email="carlos.lima@aluno.uft.edu.br", cpf="33333333333", senha=pegar_senha_hash("senha123"))
-    user_convidado = Usuario(nome="Palestrante Externo", email="guest@email.com", cpf="44444444444", senha=pegar_senha_hash("senha123"))
-    
-    session.add_all([user_prof, user_aluno1, user_aluno2, user_convidado])
-    session.flush()
+        session.add_all([user_prof, user_aluno1, user_aluno2, user_convidado])
+        session.flush()  # gera ids de usuario
 
-    # 3. Vincular Professor e Alunos aos Usuarios
-    # Professor
-    prof = Professor(
-        id_usuario=user_prof.id,        # Mudança: idUsuario -> id_usuario
-        id_universidade=univ.id         # Mudança: idUniversidade -> id_universidade
-    )
-    session.add(prof)
+        # Professor (primary key = id_usuario)
+        prof = Professor(id_usuario=user_prof.id, id_universidade=u1.id)
+        session.add(prof)
 
-    # Curso
-# Curso
-    curso = Curso(
-        nome="Ciência da Computação",
-        sigla="BCC",
-        email="bcc@uft.edu.br",
-        id_universidade=univ.id,
-        graduacao=True      # Mudança: idUniversidade -> id_universidade
-    )
-    session.add(curso)
-    session.flush()
+        # Cursos
+        curso_bcc = Curso(nome="Ciência da Computação", sigla="BCC", email="bcc@uft.edu.br", id_universidade=u1.id, graduacao=True)
+        curso_mat = Curso(nome="Matemática", sigla="MAT", email="mat@uft.edu.br", id_universidade=u1.id, graduacao=False)
+        session.add_all([curso_bcc, curso_mat])
+        session.flush()  # gera ids de cursos
 
-    curso2 = Curso(
-        nome="Matematica",
-        sigla="MAT",
-        email="mat@uft.edu.br",
-        id_universidade=univ.id,
-        graduacao=False      # Mudança: idUniversidade -> id_universidade
-    )
-    session.add(curso2)
-    session.flush()
+        # Alunos (primary key = id_usuario)
+        aluno1 = Aluno(id_usuario=user_aluno1.id, id_curso=curso_bcc.id, matricula="2023001")
+        aluno2 = Aluno(id_usuario=user_aluno2.id, id_curso=curso_bcc.id, matricula="2023002")
+        session.add_all([aluno1, aluno2])
 
-    curso3 = Curso(
-        nome="Fisica",
-        sigla="FIS",
-        email="fis@uece.br",
-        id_universidade=univ2.id,
-        graduacao=True      # Mudança: idUniversidade -> id_universidade
-    )
-    session.add(curso3)
-    session.flush()
+        session.flush()
 
-    # Alunos
-    aluno1 = Aluno(id_usuario=user_aluno1.id, id_curso=curso.id, matricula="2023001") # Snake case aplicado
-    aluno2 = Aluno(id_usuario=user_aluno2.id, id_curso=curso.id, matricula="2023002")
-    session.add_all([aluno1, aluno2])
+        # Eventos: usar email_proprietario = email do usuario proprietário
+        evento_palestra = Evento(
+            nome="Palestra sobre Inovações Tecnológicas",
+            descricao="Uma palestra sobre inovações.",
+            id_universidade=u1.id,
+            data_inicio=datetime.now() + timedelta(days=1),
+            data_termino=datetime.now() + timedelta(days=1, hours=2),
+            recorrencia="Não",
+            categoria="Palestra",
+            email_proprietario=user_prof.email
+        )
+        evento_aula = Evento(
+            nome="Aula: Banco de Dados I",
+            descricao="Aula inaugural de Banco de Dados I.",
+            id_universidade=u1.id,
+            data_inicio=datetime.now() + timedelta(hours=2),
+            data_termino=datetime.now() + timedelta(hours=3),
+            recorrencia="Semanal",
+            categoria="Aula",
+            email_proprietario=user_prof.email
+        )
+        session.add_all([evento_palestra, evento_aula])
+        session.flush()  # gera ids de eventos
 
-    # 4. Criar Eventos e Disciplinas
-    
-    # Evento genérico
-    evento_palestra = Evento(
-        nome ="Palestra sobre Inovações Tecnológicas",
-        descricao ="Uma palestra abordando as últimas inovações em tecnologia.",
-        id_universidade=univ.id,
-        data_inicio=datetime.now(),             # Mudança: dataInicio -> data_inicio
-        data_termino=datetime.now() + timedelta(hours=2), # Mudança: dataTermino -> data_termino
-        recorrencia="False",
-        categoria="Palestra",
-    email_proprietario=user_prof.email     # Mudança: idProprietario -> email_proprietario (agora referencia usuario.email)
-    )
-    session.add(evento_palestra)
-    session.flush()
+        # Disciplina: primary key = id_evento (usar id do evento_aula)
+        disciplina = Disciplina(
+            id_evento=evento_aula.id,
+            id_professor=prof.id_usuario,
+            horario="19:00",
+            nome="Banco de Dados I"
+        )
+        session.add(disciplina)
+        session.flush()
 
-    # Evento do tipo Disciplina
-    evento_aula = Evento(
-        nome ="Aula de Banco de Dados I",
-        descricao ="Primeira aula da disciplina de Banco de Dados I.",
-        id_universidade=univ.id,
-        data_inicio=datetime.now(),
-        data_termino=datetime.now() + timedelta(60),
-        recorrencia="Semanal",
-        categoria="Aula",
-    email_proprietario=user_prof.email
-    )
-    session.add(evento_aula)
-    session.flush() 
+        # Dias da disciplina (id_disciplina refere-se a disciplina.id_evento)
+        dia1 = DisciplinaDias(id_disciplina=disciplina.id_evento, dia="Segunda")
+        dia2 = DisciplinaDias(id_disciplina=disciplina.id_evento, dia="Quarta")
+        session.add_all([dia1, dia2])
 
-    # Disciplina 
-    disciplina = Disciplina(
-        id_evento=evento_aula.id,           # Mudança: idEvento -> id_evento
-        id_professor=prof.id_usuario,       # Mudança: idProfessor -> id_professor e idUsuario -> id_usuario
-        horario="19:00",
-        nome ="Banco de Dados I"
-    )
-    session.add(disciplina)
-    session.flush()
+        # Vínculo curso-disciplina
+        curso_disc = CursoDisciplina(id_curso=curso_bcc.id, id_disciplina=disciplina.id_evento, creditos=4)
+        session.add(curso_disc)
 
-    # 5. Tabelas dependentes de Disciplina e Curso
-    # Mudança: Classe dDisciplina_dias virou DisciplinaDias
-    d_dias = DisciplinaDias(id_disciplina=disciplina.id_evento, dia="Segunda") # Mudança: idDisciplina -> id_disciplina
-    d_dias2 = DisciplinaDias(id_disciplina=disciplina.id_evento, dia="Quarta")
-    
-    curso_disc = CursoDisciplina(
-        id_curso=curso.id,                  # Mudança: idCurso -> id_curso
-        id_disciplina=disciplina.id_evento, # Mudança: idDisciplina -> id_disciplina
-        creditos=4
-    )
-    session.add_all([d_dias, d_dias2, curso_disc])
+        # Ocorrencia do evento (evento_aula)
+        ocorrencia = OcorrenciaEvento(id_evento=evento_aula.id, local="Sala 301", data=datetime.now() + timedelta(hours=2))
+        session.add(ocorrencia)
+        session.flush()
 
-    # 6. Ocorrência, Notificação, Convidado
-    ocorrencia = OcorrenciaEvento(
-        id_evento=evento_aula.id,           # Mudança: idEvento -> id_evento
-        local="Sala 301",
-        data=datetime.now()
-    )
-    session.add(ocorrencia)
-    session.flush()
+        # Notificação para um aluno
+        notificacao = Notificacao(id_usuario=user_aluno1.id, data=datetime.now(), mensagem="Aula de BD I vai começar", evento=str(evento_aula.id))
+        session.add(notificacao)
 
-    notificacao = Notificacao(
-        id_usuario=user_aluno1.id,          # Mudança: idUsuario -> id_usuario
-        data=datetime.now(),
-        mensagem="Aula de BD I começou",
-        evento="Banco de Dados I" # Mudança: atributo 'evento' virou 'mensagem' na classe
-    )
+        # Convidado para palestra
+        convidado = Convidado(id_evento=evento_palestra.id, id_usuario=user_convidado.id, status_vinculo="Confirmado")
+        session.add(convidado)
 
-    convidado = Convidado(
-        id_evento=evento_palestra.id,       # Mudança: idEvento -> id_evento
-        id_usuario=user_convidado.id,       # Mudança: idUsuario -> id_usuario
-        status_vinculo="Confirmado"         # Mudança: statusVinculo -> status_vinculo
-    )
-    session.add_all([notificacao, convidado])
+        # Presencas (id_aluno = aluno.id_usuario)
+        pres1 = Presenca(id_ocorrencia_evento=ocorrencia.id, id_aluno=aluno1.id_usuario, presente=True)
+        pres2 = Presenca(id_ocorrencia_evento=ocorrencia.id, id_aluno=aluno2.id_usuario, presente=False)
+        session.add_all([pres1, pres2])
 
-    # 7. Presença
-    presenca1 = Presenca(
-        id_ocorrencia_evento=ocorrencia.id, # Mudança: idOcorrenciaEvento -> id_ocorrencia_evento
-        id_aluno=aluno1.id_usuario,         # Mudança: idAluno -> id_aluno
-        presente=True
-    )
-    presenca2 = Presenca(
-        id_ocorrencia_evento=ocorrencia.id,
-        id_aluno=aluno2.id_usuario,
-        presente=False
-    )
-    session.add_all([presenca1, presenca2])
+        # commit final
+        session.commit()
 
-    # Salvar tudo
-    session.commit()
-    print("--- Dados inseridos com sucesso! ---")
-    print(f"Universidade ID: {univ.id}")
-    print(f"Professor Criado ID: {prof.id_usuario}")
-    print(f"Disciplina Criada: {disciplina.nome} (Vinculada ao Evento ID: {disciplina.id_evento})")
+        print("Banco populado com sucesso:")
+        print(f"Universidades: {u1.id}, {u2.id}")
+        print(f"Usuarios criados: prof={user_prof.id}, aluno1={user_aluno1.id}, aluno2={user_aluno2.id}, convidado={user_convidado.id}")
+        print(f"Evento aula id: {evento_aula.id}, disciplina id_evento: {disciplina.id_evento}")
+
+    except Exception as e:
+        session.rollback()
+        print("Erro ao popular banco:", e)
+    finally:
+        session.close()
 
 if __name__ == "__main__":
     popular_banco()
+# ...existing code...

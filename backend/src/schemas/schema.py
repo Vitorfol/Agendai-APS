@@ -172,6 +172,7 @@ class NotificacaoBase(BaseModel):
     id_usuario: int
     data: datetime
     evento: str
+    mensagem: Optional[str] = None
 
 class NotificacaoCreate(NotificacaoBase):
     pass
