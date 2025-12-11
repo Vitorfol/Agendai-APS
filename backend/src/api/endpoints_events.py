@@ -16,13 +16,15 @@ router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Ev
 )
 def criar_evento(
     payload: schema.EventoComplexoCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: TokenPayload = Depends(service_auth.get_current_user)
 ):
     try:
         novo_evento = service_events.criar_evento_logica(
             db=db,
             dados=payload.evento,
-            disciplina=payload.disciplina
+            disciplina=payload.disciplina,
+            current_user = current_user
         )
 
    

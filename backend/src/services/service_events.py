@@ -8,7 +8,7 @@ from ..core.constants import HORARIOS, DIAS_MAP
 from ..schemas.jwt import TokenPayload
 from ..services.service_notifications import notificar_usuarios_em_massa
 
-def criar_evento_logica(db: Session, dados, disciplina=None):
+def criar_evento_logica(db: Session, dados, disciplina=None, current_user: TokenPayload = None):
 
     # 1. Validar datas
     if dados.data_termino <= dados.data_inicio:
@@ -61,29 +61,13 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             gerar_ocorrencias_disciplina(db, novo_evento, novo_evento.disciplina)
 
         db.commit()
-        db.refresh(novo_evento)        # --- NOTIFICAR ALUNOS DO CURSO ---
-        if  dados.categoria == "Disciplina" and disciplina:
-            disciplina = db.query(models.Disciplina).filter(
-                models.Disciplina.id_evento == novo_evento.id
-            ).first()
-            if disciplina:
-                # Buscar alunos do curso vinculado à disciplina
-                curso_disc = db.query(models.CursoDisciplina).filter(
-                    models.CursoDisciplina.id_disciplina == disciplina.id_evento
-                ).first()
-                if curso_disc:
-                    alunos = db.query(models.Aluno).filter(
-                        models.Aluno.id_curso == curso_disc.id_curso
-                    ).all()
-                    ids_alunos = [aluno.id_usuario for aluno in alunos]
-                    
-                    mensagem = f"Nova aula criada: {novo_evento.nome} em {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}"
-                    notificar_usuarios_em_massa(
-                        db=db,
-                        ids_usuarios=ids_alunos,
-                        mensagem=mensagem,
-                        id_evento=novo_evento.id
-                    )     
+        db.refresh(novo_evento)  
+        # Notificar o proprietário do evento (se houver usuário identificado)
+        mandar_noticacao_proprietariao(db=db, novo_evento=novo_evento, usuario=usuario, 
+        mensagem=f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}")   
+        mandar_notificacao_usuario_atual(db=db, novo_evento=novo_evento, current_user=current_user,
+        mensagem=f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}")
+    
         return novo_evento
 
     except Exception as e:
@@ -93,7 +77,46 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             detail=f"Erro ao persistir evento no banco: {str(e)}"
         )
     
+def mandar_noticacao_proprietariao(db: Session, novo_evento:models.Evento,usuario:models.Usuario,
+                                   mensagem: str = None):
+    if usuario:
+            #mensagem_proprietario = 
+            try:
+                output_prop = notificar_usuarios_em_massa(
+                    db=db,
+                    ids_usuarios=[usuario.id],
+                    mensagem=mensagem,
+                    id_evento=novo_evento.id
+                )
+                print(output_prop)
+            except Exception:
+                # não falhar a criação do evento caso notificação falhe
+                pass    
 
+
+def mandar_notificacao_usuario_atual(db: Session, novo_evento:models.Evento, current_user: TokenPayload, mensagem: str = None):
+# --- NOTIFICAR O USUÁRIO ATUAL (a partir do TokenPayload) ---
+    try:
+        
+        if current_user:
+            current_email = getattr(current_user, "sub", None)
+            if current_email:
+                usuario_token = db.query(models.Usuario).filter(models.Usuario.email == current_email).first()
+                if usuario_token:
+                    #mensagem_token = f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}"
+                    # não deixar falha na notificação interromper a criação do evento
+                    try:
+                        notificar_usuarios_em_massa(
+                            db=db,
+                            ids_usuarios=[usuario_token.id],
+                            mensagem=mensagem,
+                            id_evento=novo_evento.id
+                        )
+                    except Exception:
+                            pass
+    except Exception:
+        pass
+    
 def criar_disciplina(db: Session, id_evento: int, disciplina, id_professor: int):
     nova_disciplina = models.Disciplina(
         id_evento=id_evento,
