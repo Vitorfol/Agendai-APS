@@ -17,14 +17,13 @@ router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Ev
 def criar_evento(
     payload: schema.EventoComplexoCreate,
     db: Session = Depends(get_db),
-    current_user: TokenPayload = Depends(service_auth.get_current_user)
-):
+    current_user_email: str = Depends(service_auth.get_current_user_email)):
     try:
         novo_evento = service_events.criar_evento_logica(
             db=db,
             dados=payload.evento,
             disciplina=payload.disciplina,
-            current_user = current_user
+            current_email = current_user_email
         )
 
    
@@ -40,13 +39,14 @@ def criar_evento(
         )
     
 @router.delete("/{id_evento}", status_code=status.HTTP_200_OK)
-def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db)):
+def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db),
+                            current_user_email: str = Depends(service_auth.get_current_user_email)):
     """
     Deleta um evento e toda a sua cadeia de dependências.
     """
 
     try:
-        return service_events.deletar_evento(db, id_evento)
+        return service_events.deletar_evento(db, id_evento, current_email= current_user_email)
     except HTTPException as e:
         # Erros lançados no service retornam diretamente
         raise e
