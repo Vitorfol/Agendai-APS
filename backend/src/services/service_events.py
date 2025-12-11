@@ -15,6 +15,12 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             status_code=400,
             detail="A data de término deve ser posterior à data de início."
         )
+    
+    if dados.horario_termino <= dados.horario_inicio:
+        raise HTTPException(
+            status_code=400,
+            detail="O horário de término deve ser posterior ao horário de início."
+        )
 
     # 2. Validar proprietário
     usuario = None
@@ -34,6 +40,8 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             data_inicio=dados.data_inicio,
             data_termino=dados.data_termino,
             recorrencia=dados.recorrencia,
+            horario_inicio=dados.horario_inicio,
+            horario_termino=dados.horario_termino,
             local_padrao=dados.local_padrao,
             categoria=dados.categoria,
             email_proprietario=dados.email_proprietario
@@ -123,14 +131,17 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
         # gerar todas as ocorrências semanais
         while dt <= data_fim:
 
-            hora_inicio = HORARIOS[turno][blocos[0]][0]
+            horario_inicio = HORARIOS[turno][blocos[0]][0]
+            horario_termino = HORARIOS[turno][blocos[-1]][1]
 
-            dt_inicio = datetime.combine(dt.date(), hora_inicio)
+            dt_inicio = dt.date()
 
             ocorrencia = models.OcorrenciaEvento(
                 id_evento=evento.id,
                 data=dt_inicio,
-                local = evento.local_padrao
+                local = evento.local_padrao,
+                horario_inicio = horario_inicio,
+                horario_termino = horario_termino
             )
 
             db.add(ocorrencia)
@@ -174,6 +185,8 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
         ocorrencia = models.OcorrenciaEvento(
             id_evento=evento.id,
             data=evento.data_inicio,
+            horario_inicio=evento.horario_inicio,
+            horario_termino=evento.horario_termino,
             local=evento.local_padrao
         )
         db.add(ocorrencia)
@@ -189,7 +202,10 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
             ocorrencia = models.OcorrenciaEvento(
                 id_evento=evento.id,
                 data=data_atual,
-                local=None
+                horario_inicio=evento.horario_inicio,
+                horario_termino=evento.horario_termino,
+
+                local=evento.local_padrao
             )
             db.add(ocorrencia)
             ocorrencias.append(ocorrencia)
@@ -201,7 +217,9 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
                 ocorrencia = models.OcorrenciaEvento(
                     id_evento=evento.id,
                     data=data_atual,
-                    local=None
+                    horario_inicio=evento.horario_inicio,
+                    horario_termino=evento.horario_termino,
+                    local=evento.local_padrao
                 )
                 db.add(ocorrencia)
                 ocorrencias.append(ocorrencia)
@@ -214,7 +232,9 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
                 ocorrencia = models.OcorrenciaEvento(
                     id_evento=evento.id,
                     data=data_atual,
-                    local=None
+                    horario_inicio=evento.horario_inicio,
+                    horario_termino=evento.horario_termino,
+                    local=evento.local_padrao
                 )
                 db.add(ocorrencia)
                 ocorrencias.append(ocorrencia)

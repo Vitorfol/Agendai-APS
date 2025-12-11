@@ -109,6 +109,8 @@ class Evento(Base):
     recorrencia = db.Column(db.String(255))
     local_padrao = db.Column(db.String(255))
     categoria = db.Column(db.String(255))
+    horario_inicio = db.Column(db.Time)
+    horario_termino = db.Column(db.Time)
     email_proprietario = db.Column(db.String(255), ForeignKey("usuario.email")) # idproprietário -> id_proprietario
 
     # Relationships
@@ -165,6 +167,8 @@ class OcorrenciaEvento(Base):
     id_evento = db.Column(db.Integer, ForeignKey("evento.id"))
     local = db.Column(db.String(255))
     data = db.Column(db.DateTime)
+    horario_inicio = db.Column(db.Time)
+    horario_termino = db.Column(db.Time)
 
     # Relationships
     evento = relationship("Evento", back_populates="ocorrencia_evento")

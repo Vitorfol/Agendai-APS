@@ -91,6 +91,8 @@ class EventoBase(BaseModel):
     id_universidade: int
     data_inicio: datetime
     data_termino: datetime
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
     local_padrao: Optional[str] = None
     recorrencia: Optional[str] = None
     categoria: Optional[str] = None
@@ -157,6 +159,8 @@ class CursoDisciplinaResponse(CursoDisciplinaBase):
 class OcorrenciaEventoBase(BaseModel):
     id_evento: int
     local: str = Field(..., max_length=255)
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
     data: datetime
 
 class OcorrenciaEventoCreate(OcorrenciaEventoBase):
@@ -189,6 +193,8 @@ class OcorrenciaEventoResponse(BaseModel):
     categoria: Optional[str] = None
     descricao: Optional[str] = None
     recorrencia: Optional[str] = None
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
     dias: Optional[List[str]] = None
     is_proprietario: bool = False
     model_config = ConfigDict(from_attributes=True)
