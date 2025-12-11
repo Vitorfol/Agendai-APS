@@ -770,26 +770,41 @@ def adicionar_participante_evento(
     # 5. Determinar tipo de convite e buscar usuários
     usuarios_para_convidar = []
     
-    # CASO 1: todos@<dominio> - convida todos com esse domínio no email
+    # CASO 1: todos@<dominio> - convida todos com esse domínio no email (APENAS UNIVERSIDADE)
     if email_usuario.lower().startswith("todos@"):
-        dominio_parte = email_usuario.split("@", 1)[1]  # ex: "uece.br"
-        dominio_busca = "@" + dominio_parte.split(".")[0]  # ex: "@uece"
+        # Verificar se o usuário atual é uma universidade
+        if current_user_tag != 'universidade':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Apenas universidades podem usar o convite em massa 'todos@dominio'."
+            )
         
+        dominio_parte = email_usuario.split("@", 1)[1]  # ex: "uece.br"
+        
+        # Buscar todos emails que contenham o domínio completo (incluindo subdomínios)
+        # Exemplos: @uece.br, @aluno.uece.br, @prof.uece.br
         usuarios_para_convidar = db.query(models.Usuario).filter(
-            models.Usuario.email.contains(dominio_busca)
+            models.Usuario.email.like(f'%@%.{dominio_parte}') | 
+            models.Usuario.email.like(f'%@{dominio_parte}')
         ).all()
         
         if not usuarios_para_convidar:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Nenhum usuário encontrado com '{dominio_busca}' no email."
+                detail=f"Nenhum usuário encontrado com domínio '{dominio_parte}' no email."
             )
     
-    # CASO 2: email de curso - convida todos alunos do curso
+    # CASO 2: email de curso - convida todos alunos do curso (APENAS UNIVERSIDADE)
     else:
         curso = db.query(models.Curso).filter(models.Curso.email == email_usuario).first()
         
         if curso:
+            # Verificar se o usuário atual é uma universidade
+            if current_user_tag != 'universidade':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Apenas universidades podem convidar curso completo."
+                )
             # Buscar todos os alunos do curso e seus usuários
             alunos = db.query(models.Aluno).filter(
                 models.Aluno.id_curso == curso.id
