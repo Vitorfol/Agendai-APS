@@ -405,13 +405,6 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
     # data: apenas data (sem horário)
     data_only = ocorrencia.data.date() if isinstance(ocorrencia.data, datetime) else ocorrencia.data
 
-    # por padrão, hora será o horário da ocorrência no formato HH:MM:SS
-    hora_val: str | None = None
-    try:
-        hora_val = ocorrencia.data.time().isoformat()
-    except Exception:
-        hora_val = None
-
     # coletar recorrência do evento
     recorrencia_val = ocorrencia.evento.recorrencia if hasattr(ocorrencia.evento, 'recorrencia') else None
 
@@ -429,7 +422,8 @@ def montar_informacoes_ocorrencia(ocorrencia: models.OcorrenciaEvento, dias_list
     info = {
         "local": ocorrencia.local,
         "data": data_only,
-        "hora": hora_val,
+        "horario_inicio": ocorrencia.horario_inicio,
+        "horario_termino": ocorrencia.horario_termino,
         "nome": ocorrencia.evento.nome,
         "categoria": ocorrencia.evento.categoria,
         "descricao": ocorrencia.evento.descricao,
@@ -502,10 +496,10 @@ def atualizar_ocorrencia_evento_por_data(
         )
     
     # 4. Verificar se há pelo menos um campo para atualizar
-    if payload.local is None and payload.data is None:
+    if payload.local is None and payload.data is None and payload.horario_inicio is None and payload.horario_termino is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nenhum campo fornecido para atualização. Forneça 'local' e/ou 'data'."
+            detail="Nenhum campo fornecido para atualização. Forneça 'local', 'data' e/ou horários."
         )
     
     # 5. Atualizar os campos fornecidos
@@ -524,7 +518,32 @@ def atualizar_ocorrencia_evento_por_data(
             )
         ocorrencia.data = payload.data
         campos_atualizados.append("data")
-    
+
+    horario_inicio = ocorrencia.horario_inicio
+    horario_termino = ocorrencia.horario_termino
+
+    if payload.horario_inicio is not None:
+        horario_inicio = payload.horario_inicio
+
+    if payload.horario_termino is not None:
+        horario_termino = payload.horario_termino
+
+    # ⬅ Verificação do horário
+    if horario_inicio is not None and horario_termino is not None:
+            if horario_termino <= horario_inicio:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="O horário de término deve ser maior que o horário de início."
+                )
+
+    # Atualizar campos após validação
+    ocorrencia.horario_inicio = horario_inicio
+    ocorrencia.horario_termino = horario_termino
+    if payload.horario_inicio is not None:
+        campos_atualizados.append("horario_inicio")
+    if payload.horario_termino is not None:
+        campos_atualizados.append("horario_termino")
+                
     # 6. Persistir as mudanças
     try:
         db.commit()

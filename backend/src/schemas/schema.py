@@ -175,6 +175,8 @@ class OcorrenciaEventoUpdate(BaseModel):
     """
     local: Optional[str] = Field(None, max_length=255)
     data: Optional[datetime] = None
+    horario_inicio: Optional[time] = None
+    horario_termino: Optional[time] = None
 
 # Ocorrência: resposta pública (sem ids, flat dict)
 class OcorrenciaEventoResponse(BaseModel):
