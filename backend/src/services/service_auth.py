@@ -116,7 +116,7 @@ def registrar_professor(db: Session, dados: schema.RegistroProfessor):
         # 2. Cria o registro específico de Professor
         novo_professor = models.Professor(
             id_usuario=novo_usuario.id,
-            id_universidade=dados.idUniversidade,
+            id_universidade=dados.id_universidade,
         )
         db.add(novo_professor)
         
@@ -150,7 +150,7 @@ def registrar_aluno(db: Session, dados: schema.RegistroAluno):
         # 3. Cria o registro específico de Aluno
         novo_aluno = models.Aluno(
             id_usuario=novo_usuario.id,
-            id_curso=dados.idCurso,
+            id_curso=dados.id_curso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)
@@ -210,7 +210,7 @@ def criar_professor(db: Session, novo_usuario: models.Usuario, dados):
         # models.Professor uses snake_case column names (id_usuario, id_universidade, data_admissao)
         novo_professor = models.Professor(
             id_usuario=novo_usuario.id,
-            id_universidade=dados.idUniversidade,
+            id_universidade=dados.id_universidade,
         )
         db.add(novo_professor)
         
@@ -233,7 +233,7 @@ def criar_aluno(db: Session, novo_usuario: models.Usuario, dados):
         # (which use camelCase) to the model column names here.
         novo_aluno = models.Aluno(
             id_usuario=novo_usuario.id,
-            id_curso=dados.idCurso,
+            id_curso=dados.id_curso,
             matricula=dados.matricula
         )
         db.add(novo_aluno)
