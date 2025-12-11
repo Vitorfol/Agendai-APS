@@ -33,61 +33,6 @@ def criar_evento(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao criar evento: {str(e)}"
         )
-    
-@router.delete("/{id_evento}", status_code=status.HTTP_200_OK)
-def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db)):
-    """
-    Deleta um evento e toda a sua cadeia de dependências.
-    """
-
-    try:
-        return service_events.deletar_evento(db, id_evento)
-    except HTTPException as e:
-        # Erros lançados no service retornam diretamente
-        raise e
-    except Exception as e:
-        # Erros inesperados
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao deletar evento: {str(e)}"
-        )
-    
-
-@router.get("/{id_evento}", response_model=schema.EventoResponse, status_code=status.HTTP_200_OK)
-def obter_evento(id_evento: int, db: Session = Depends(get_db)):
-    """
-    Obtém um evento pelo seu ID.
-    """
-    try:
-        evento = service_events.pegar_evento_por_id(db, id_evento)
-        if not evento:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Evento não encontrado."
-            )
-        return evento
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao obter evento: {str(e)}"
-        )
-    
-@router.get("/{id_evento}/occurrences", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
-def listar_ocorrencias_evento(id_evento: int, db: Session = Depends(get_db)):
-    """
-    Lista todas as ocorrências associadas a um evento.
-    """
-    try:
-        ocorrencias = service_events.listar_ocorrencias_por_evento(db, id_evento)
-        return ocorrencias
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao listar ocorrências do evento: {str(e)}"
-        )
-    
 
 @router.get("/", response_model=list[schema.OcorrenciaEventoComIdResponse], status_code=status.HTTP_200_OK, response_model_exclude_none=True)
 def listar_ocorrencias_de_evento_de_um_usuario(
@@ -114,7 +59,46 @@ def listar_ocorrencias_de_evento_de_um_usuario(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao listar ocorrencias de eventos do usuário: {str(e)}"
         )
-        
+
+@router.get("/{id_evento}/occurrences", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
+def listar_ocorrencias_evento(id_evento: int, db: Session = Depends(get_db)):
+    """
+    Lista todas as ocorrências associadas a um evento.
+    """
+    try:
+        ocorrencias = service_events.listar_ocorrencias_por_evento(db, id_evento)
+        return ocorrencias
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao listar ocorrências do evento: {str(e)}"
+        )
+
+@router.get("/{id_evento}/participants", response_model=list[schema.ParticipantResponse], status_code=status.HTTP_200_OK)
+def listar_participantes_evento(
+    id_evento: int, 
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todos os participantes de um evento específico.
+
+    Parâmetros:
+        - id_evento: ID do evento
+    """
+    try:
+        participantes = service_events.listar_participantes_evento(
+            db=db,
+            id_evento=id_evento
+        )
+        return participantes
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao listar participantes: {str(e)}"
+        )
+
 @router.post("/{id_evento}/participants", status_code=status.HTTP_200_OK)
 def adicionar_participante_evento(
     id_evento: int, 
@@ -178,30 +162,44 @@ def remover_participante_evento(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao remover participante: {str(e)}"
         )
-        
-@router.get("/{id_evento}/participants", response_model=list[schema.ParticipantResponse], status_code=status.HTTP_200_OK)
-def listar_participantes_evento(
-    id_evento: int, 
-    db: Session = Depends(get_db)
-):
-    """
-    Lista todos os participantes de um evento específico.
 
-    Parâmetros:
-        - id_evento: ID do evento
+@router.get("/{id_evento}", response_model=schema.EventoResponse, status_code=status.HTTP_200_OK)
+def obter_evento(id_evento: int, db: Session = Depends(get_db)):
+    """
+    Obtém um evento pelo seu ID.
     """
     try:
-        participantes = service_events.listar_participantes_evento(
-            db=db,
-            id_evento=id_evento
-        )
-        return participantes
+        evento = service_events.pegar_evento_por_id(db, id_evento)
+        if not evento:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Evento não encontrado."
+            )
+        return evento
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao listar participantes: {str(e)}"
+            detail=f"Erro interno ao obter evento: {str(e)}"
+        )
+
+@router.delete("/{id_evento}", status_code=status.HTTP_200_OK)
+def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db)):
+    """
+    Deleta um evento e toda a sua cadeia de dependências.
+    """
+
+    try:
+        return service_events.deletar_evento(db, id_evento)
+    except HTTPException as e:
+        # Erros lançados no service retornam diretamente
+        raise e
+    except Exception as e:
+        # Erros inesperados
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao deletar evento: {str(e)}"
         )
 
 @router.get("/{id_evento}/{date}", response_model=schema.OcorrenciaEventoResponse, status_code=status.HTTP_200_OK, response_model_exclude_none=True)
