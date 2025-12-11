@@ -202,6 +202,16 @@ class OcorrenciaEventoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OcorrenciaEventoComIdResponse(OcorrenciaEventoResponse):
+    """Resposta de ocorrência incluindo o id_evento.
+    
+    Extende OcorrenciaEventoResponse adicionando o identificador do evento.
+    Usado em listagens onde o frontend precisa identificar a qual evento
+    cada ocorrência pertence.
+    """
+    id_evento: int
+
+
 # ==========================================
 # NOTIFICAÇÃO
 # ==========================================

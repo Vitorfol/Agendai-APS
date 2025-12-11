@@ -89,18 +89,30 @@ def listar_ocorrencias_evento(id_evento: int, db: Session = Depends(get_db)):
         )
     
 
-@router.get("/user/{id_user}/occurrences", response_model=list[schema.OcorrenciaEventoResponse], status_code=status.HTTP_200_OK)
-def listar_ocorrencias_usuario(id_user: int, db: Session = Depends(get_db)):
+@router.get("/", response_model=list[schema.OcorrenciaEventoComIdResponse], status_code=status.HTTP_200_OK, response_model_exclude_none=True)
+def listar_ocorrencias_de_evento_de_um_usuario(
+    db: Session = Depends(get_db),
+    current_user_email: str = Depends(service_auth.get_current_user_email),
+    data: date | None = None,
+    categoria: str | None = None
+):
     """
-    Lista todas as ocorrências associadas a um usuário.
+    Lista todas as ocorrencias de eventos associados ao usuário autenticado, com filtros opcionais por data e categoria.
+    Retorna o id_evento junto com cada ocorrência para identificação no frontend.
+    Campos None não são incluídos na resposta (ex: 'dias' só aparece para eventos tipo Disciplina).
     """
     try:
-        ocorrencias = service_events.listar_ocorrencias_por_usuario(db, id_user)
+        ocorrencias = service_events.listar_ocorrencias_de_evento_usuario(
+            db=db,
+            user_email=current_user_email,
+            data=data,
+            categoria=categoria
+        )
         return ocorrencias
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro interno ao listar ocorrências do usuário: {str(e)}"
+            detail=f"Erro interno ao listar ocorrencias de eventos do usuário: {str(e)}"
         )
         
 @router.post("/{id_evento}/participants", status_code=status.HTTP_200_OK)

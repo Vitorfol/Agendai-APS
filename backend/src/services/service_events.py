@@ -272,18 +272,103 @@ def listar_ocorrencias_por_evento_usuario(db, id_evento, email_user):
             detail=f"Erro ao listar ocorrências do evento para o usuário: {str(e)}"
         )
     
-
-def listar_ocorrencias_por_usuario(db: Session, id_user: str):
-    try:
-        ocorrencias = db.query(models.OcorrenciaEvento).join(models.Presenca).filter(
-            models.Presenca.id_aluno == id_user
-        ).all()
-        return ocorrencias
-    except Exception as e:
+def listar_ocorrencias_de_evento_usuario(db, user_email, data, categoria):
+    """
+    Lista todas as ocorrências de eventos associados ao usuário autenticado,
+    com filtros opcionais por data e categoria.
+    
+    Args:
+        db: Sessão do banco de dados
+        user_email: Email do usuário autenticado
+        data: Data específica para filtrar ocorrências (opcional)
+        categoria: Categoria de evento para filtrar (opcional)
+    
+    Returns:
+        Lista de dicts formatados usando montar_informacoes_ocorrencia
+    """
+    # 1. Buscar usuário pelo email
+    user = db.query(models.Usuario).filter(models.Usuario.email == user_email).first()
+    
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao listar ocorrências para o usuário: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
         )
+    
+    # 2. Buscar IDs únicos dos eventos aos quais o usuário está convidado
+    ids_eventos_usuario = db.query(models.Convidado.id_evento).filter(
+        models.Convidado.id_usuario == user.id
+    ).distinct().subquery()
+    
+    # 3. Montar query de ocorrências fazendo join com Evento
+    # O join é necessário para acessar dados do evento e aplicar filtros
+    query_ocorrencias = db.query(models.OcorrenciaEvento).join(
+        models.Evento,
+        models.OcorrenciaEvento.id_evento == models.Evento.id
+    ).filter(
+        models.OcorrenciaEvento.id_evento.in_(ids_eventos_usuario)
+    )
+    
+    # 4. Aplicar filtro de data (se fornecido)
+    if data is not None:
+        query_ocorrencias = query_ocorrencias.filter(
+            func.date(models.OcorrenciaEvento.data) == data
+        )
+    
+    # 5. Aplicar filtro de categoria (se fornecido)
+    if categoria is not None:
+        query_ocorrencias = query_ocorrencias.filter(
+            models.Evento.categoria == categoria
+        )
+    
+    # 6. Executar query com eager loading para evitar N+1 ao acessar relacionamentos
+    # Após aplicar todos os filtros, carregamos os relacionamentos necessários
+    query_ocorrencias = query_ocorrencias.options(
+        joinedload(models.OcorrenciaEvento.evento)
+        .joinedload(models.Evento.disciplina)
+        .joinedload(models.Disciplina.disciplina_dias)
+    )
+    
+    ocorrencias = query_ocorrencias.all()
+    
+    # 7. Processar cada ocorrência para montar resposta formatada
+    resultado = []
+    for ocorrencia in ocorrencias:
+        # Verificar se o usuário é proprietário do evento
+        # ocorrencia.evento funciona porque temos o relationship definido no model
+        is_proprietario = ocorrencia.evento.email_proprietario == user_email
+        
+        # Buscar dias da disciplina se for evento do tipo disciplina
+        dias_list = None
+        if (ocorrencia.evento.categoria and 
+            ocorrencia.evento.categoria.lower() == 'disciplina'):
+            # disciplina funciona porque Evento tem relationship("Disciplina")
+            disciplina = getattr(ocorrencia.evento, 'disciplina', None)
+            if disciplina:
+                try:
+                    # Buscar dias diretamente do banco para garantir todos os registros
+                    result = db.execute(text(
+                        "SELECT dia FROM disciplina_dias WHERE id_disciplina = :id "
+                        "ORDER BY FIELD(dia, 'Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo')"
+                    ), {"id": disciplina.id_evento})
+                    dias_list = [row[0] for row in result.fetchall()]
+                except Exception:
+                    # Fallback: usar relationship ORM se houver erro na query SQL
+                    dias_list = [d.dia for d in (disciplina.disciplina_dias or [])]
+        
+        # Montar informações da ocorrência usando a função auxiliar
+        info = montar_informacoes_ocorrencia(
+            ocorrencia, 
+            dias_list=dias_list, 
+            is_proprietario=is_proprietario
+        )
+        # Adicionar id_evento ao dict de resposta (necessário para o frontend)
+        info["id_evento"] = ocorrencia.id_evento
+        resultado.append(info)
+    
+    return resultado 
+    
+    
 
 def deletar_evento(db: Session, id_evento: int):
 
