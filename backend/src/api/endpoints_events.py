@@ -16,14 +16,18 @@ router = APIRouter(prefix=f"{settings.API_V1_STR.rstrip('/')}/events", tags=["Ev
 )
 def criar_evento(
     payload: schema.EventoComplexoCreate,
-    db: Session = Depends(get_db)
-):
+    db: Session = Depends(get_db),
+    current_user_email: str = Depends(service_auth.get_current_user_email)):
     try:
         novo_evento = service_events.criar_evento_logica(
             db=db,
             dados=payload.evento,
             disciplina=payload.disciplina,
+            current_email = current_user_email
         )
+
+   
+
         return novo_evento
 
     except HTTPException:
@@ -33,6 +37,28 @@ def criar_evento(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao criar evento: {str(e)}"
         )
+    
+
+@router.delete("/{id_evento}", status_code=status.HTTP_200_OK)
+def deletar_evento_endpoint(id_evento: int, db: Session = Depends(get_db),
+                            current_user_email: str = Depends(service_auth.get_current_user_email)):
+    """
+    Deleta um evento e toda a sua cadeia de dependências.
+    """
+
+    try:
+        return service_events.deletar_evento(db, id_evento, current_email= current_user_email)
+    except HTTPException as e:
+        # Erros lançados no service retornam diretamente
+        raise e
+    except Exception as e:
+        # Erros inesperados
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao deletar evento: {str(e)}"
+        )
+    
+
 
 @router.get("/", response_model=list[schema.OcorrenciaEventoComIdResponse], status_code=status.HTTP_200_OK, response_model_exclude_none=True)
 def listar_ocorrencias_de_evento_de_um_usuario(

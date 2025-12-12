@@ -11,6 +11,7 @@ from src.api import endpoints_auth # Importa o seu router de autenticação
 from src.api import endpoints_events
 from src.api import endpoints_users
 from src.api import endpoints_courses
+from src.api import endpoints_notifications
 
 # 1. Inicializa a aplicação FastAPI
 app = FastAPI(
@@ -37,6 +38,7 @@ app.include_router(endpoints_auth.router)
 app.include_router(endpoints_events.router)
 app.include_router(endpoints_users.router)
 app.include_router(endpoints_courses.router)
+app.include_router(endpoints_notifications.router)
 
 # 4. Rota de Saúde (Health Check)
 @app.get("/")
