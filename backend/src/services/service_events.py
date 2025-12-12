@@ -22,14 +22,21 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             detail="O horário de término deve ser posterior ao horário de início."
         )
 
-    # 2. Validar proprietário
+    # 2. Validar proprietário (pode ser Usuario ou Universidade)
     usuario = None
     if dados.email_proprietario is not None:
+        # Tentar buscar em Usuario primeiro
         usuario = db.query(models.Usuario).filter(
             models.Usuario.email == dados.email_proprietario
         ).first()
+        
+        # Se não encontrou em Usuario, tentar em Universidade
         if not usuario:
-            raise HTTPException(status_code=404, detail="Usuário proprietário não encontrado.")
+            universidade = db.query(models.Universidade).filter(
+                models.Universidade.email == dados.email_proprietario
+            ).first()
+            if not universidade:
+                raise HTTPException(status_code=404, detail="Proprietário não encontrado.")
 
     try:
         # 3. Criar evento
@@ -67,6 +74,14 @@ def criar_evento_logica(db: Session, dados, disciplina=None):
             gerar_ocorrencias_evento(db, novo_evento)
         else:
             gerar_ocorrencias_disciplina(db, novo_evento, novo_evento.disciplina)
+
+        # 5. Adicionar o proprietário como convidado automaticamente (se for usuário)
+        if usuario:  # Se o proprietário for um usuário (não universidade)
+            convidado_proprietario = models.Convidado(
+                id_evento=novo_evento.id,
+                id_usuario=usuario.id
+            )
+            db.add(convidado_proprietario)
 
         db.commit()
         db.refresh(novo_evento)
@@ -279,26 +294,43 @@ def listar_ocorrencias_de_evento_usuario(db, user_email, data, categoria):
     
     Args:
         db: Sessão do banco de dados
-        user_email: Email do usuário autenticado
+        user_email: Email do usuário autenticado (pode ser Usuario ou Universidade)
         data: Data específica para filtrar ocorrências (opcional)
         categoria: Categoria de evento para filtrar (opcional)
     
     Returns:
         Lista de dicts formatados usando montar_informacoes_ocorrencia
     """
-    # 1. Buscar usuário pelo email
+    # 1. Buscar usuário ou universidade pelo email
     user = db.query(models.Usuario).filter(models.Usuario.email == user_email).first()
     
+    # Se não encontrou em Usuario, tentar em Universidade
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuário não encontrado."
-        )
+        universidade = db.query(models.Universidade).filter(models.Universidade.email == user_email).first()
+        if not universidade:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário ou universidade não encontrado."
+            )
+        # Usar universidade como "user" para continuar o fluxo
+        # Neste caso, vamos buscar eventos onde a universidade é proprietária
+        user_id = None  # Universidade não tem id_usuario
+        is_universidade = True
+    else:
+        user_id = user.id
+        is_universidade = False
     
-    # 2. Buscar IDs únicos dos eventos aos quais o usuário está convidado
-    ids_eventos_usuario = db.query(models.Convidado.id_evento).filter(
-        models.Convidado.id_usuario == user.id
-    ).distinct().subquery()
+    # 2. Buscar IDs dos eventos baseado no tipo de usuário
+    if is_universidade:
+        # Para universidade: buscar eventos onde ela é proprietária
+        ids_eventos_usuario = db.query(models.Evento.id).filter(
+            models.Evento.email_proprietario == user_email
+        ).distinct().subquery()
+    else:
+        # Para usuário comum: buscar eventos onde está convidado
+        ids_eventos_usuario = db.query(models.Convidado.id_evento).filter(
+            models.Convidado.id_usuario == user_id
+        ).distinct().subquery()
     
     # 3. Montar query de ocorrências fazendo join com Evento
     # O join é necessário para acessar dados do evento e aplicar filtros
