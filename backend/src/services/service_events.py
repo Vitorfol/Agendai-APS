@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 from datetime import datetime, timedelta, date
-from ..core.constants import HORARIOS, DIAS_MAP
+from ..core.constants import HORARIOS, DIAS_MAP, NUM_PARA_DIA
 from ..schemas.jwt import TokenPayload
 from ..services.service_notifications import notificar_usuarios_em_massa,criar_notificacao
 
@@ -178,7 +178,8 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
 
     for dia_str in dias_semana:
         weekday = DIAS_MAP[dia_str]   # agora funciona
-        criar_dias_disciplina(db, evento.id, dia_str)
+        dia_nome = NUM_PARA_DIA[dia_str]
+        criar_dias_disciplina(db, evento.id, dia_nome)
 
         # encontrar a primeira data válida
         dt = data_inicio
