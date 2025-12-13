@@ -55,7 +55,6 @@ class Usuario(Base):
     professor = relationship("Professor", back_populates="usuario", uselist=False)
     notificacao = relationship("Notificacao", back_populates="usuario")
     convidado = relationship("Convidado", back_populates="usuario")
-    eventos = relationship("Evento", back_populates="usuario")
 
 
 class Aluno(Base):
@@ -111,10 +110,9 @@ class Evento(Base):
     categoria = db.Column(db.String(255))
     horario_inicio = db.Column(db.Time)
     horario_termino = db.Column(db.Time)
-    email_proprietario = db.Column(db.String(255), ForeignKey("usuario.email")) # idproprietário -> id_proprietario
+    email_proprietario = db.Column(db.String(255))
 
     # Relationships
-    usuario = relationship("Usuario", back_populates="eventos")
     universidade = relationship("Universidade", back_populates="eventos")
     ocorrencia_evento = relationship("OcorrenciaEvento", back_populates="evento")
     disciplina = relationship("Disciplina", back_populates="evento", uselist=False)

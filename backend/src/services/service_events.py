@@ -25,16 +25,16 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
 
     # 2. Validar proprietário (pode ser Usuario ou Universidade)
     usuario = None
-    if dados.email_proprietario is not None:
+    if current_email is not None:
         # Tentar buscar em Usuario primeiro
         usuario = db.query(models.Usuario).filter(
-            models.Usuario.email == dados.email_proprietario
+            models.Usuario.email == current_email
         ).first()
         
         # Se não encontrou em Usuario, tentar em Universidade
         if not usuario:
             universidade = db.query(models.Universidade).filter(
-                models.Universidade.email == dados.email_proprietario
+                models.Universidade.email == current_email
             ).first()
             if not universidade:
                 raise HTTPException(status_code=404, detail="Proprietário não encontrado.")
@@ -52,7 +52,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
             horario_termino=dados.horario_termino,
             local_padrao=dados.local_padrao,
             categoria=dados.categoria,
-            email_proprietario=dados.email_proprietario
+            email_proprietario=current_email 
         )
 
         db.add(novo_evento)
