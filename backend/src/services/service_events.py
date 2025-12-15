@@ -11,7 +11,7 @@ from ..services.service_notifications import notificar_usuarios_em_massa,criar_n
 def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str = None):
 
     # 1. Validar datas
-    if dados.data_termino <= dados.data_inicio:
+    if dados.data_termino <= dados.data_inicio and dados.recorrencia != "unico":
         raise HTTPException(
             status_code=400,
             detail="A data de término deve ser posterior à data de início."
