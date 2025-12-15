@@ -34,7 +34,7 @@ COURSES = [
         "graduacao": True
     },
     {
-        "nome": "Ciência da Computação - Pós-Graduação",
+        "nome": "Ciência da Computação - Pós",
         "sigla": "CC-POS",
         "email": "computacao.pos@uece.br",
         "graduacao": False
@@ -46,7 +46,7 @@ COURSES = [
         "graduacao": True
     },
     {
-        "nome": "Química - Pós-Graduação",
+        "nome": "Química - Pós",
         "sigla": "QUIM-POS",
         "email": "quimica.pos@uece.br",
         "graduacao": False
@@ -58,7 +58,7 @@ COURSES = [
         "graduacao": True
     },
     {
-        "nome": "Física - Pós-Graduação",
+        "nome": "Física - Pós",
         "sigla": "FIS-POS",
         "email": "fisica.pos@uece.br",
         "graduacao": False
