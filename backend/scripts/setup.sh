@@ -13,7 +13,7 @@ set -euo pipefail
 DO_DOWN=false
 DO_UP=true
 DO_ALEMBIC=true
-DO_POPULATE=true
+DO_INIT=false
 # Note: automatic git pull removed to avoid unexpected repository changes during setup
 
 usage() {
@@ -25,16 +25,19 @@ Options:
   --no-down        (deprecated) kept for backwards compatibility; previously skipped the down step
   --no-up          don't run 'docker compose up -d' (skip starting services)
   --no-alembic     don't run alembic upgrade head
-  --no-populate    don't run the seed/popule script
+  --init           initialize database with UECE and courses for presentation
   --no-git-pull    (removed) previously used to auto-pull changes before running setup
   -h, --help       show this help
 
 Examples:
-  # full reset (drop volumes, start services, apply migrations, populate DB)
-  $0
+  # full reset (drop volumes, start services, apply migrations)
+  $0 --down
 
-  # keep existing volumes, just apply migrations and populate
-  $0 --no-down
+  # initialize database with UECE and courses for presentation
+  $0 --init
+
+  # keep existing volumes, just apply migrations
+  $0
 EOF
 }
 
@@ -44,7 +47,7 @@ while [[ $# -gt 0 ]]; do
   --no-down) echo "--no-down is deprecated; use --down to request a destructive reset"; DO_DOWN=false; shift ;;
     --no-up) DO_UP=false; shift ;;
     --no-alembic) DO_ALEMBIC=false; shift ;;
-    --no-populate) DO_POPULATE=false; shift ;;
+    --init) DO_INIT=true; shift ;;
   --no-git-pull) echo "--no-git-pull is deprecated; this setup script no longer auto-pulls."; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 1 ;;
@@ -91,12 +94,16 @@ wait_for_db() {
   for i in $(seq 1 120); do
     # Prefer using mysqladmin inside the DB container to verify server readiness.
     if docker compose exec -T db mysqladmin ping -uroot -p"${DATABASE_PASSWORD:-}" --silent 2>/dev/null; then
+      echo "[setup_db] DB ping succeeded, waiting extra 3s for full initialization..."
+      sleep 3
       echo "[setup_db] DB is available (mysqladmin ping succeeded)"
       return 0
     fi
 
     # Fallback: try an active TCP connect from the backend container (less preferred).
     if docker compose exec -T backend sh -c "python - <<'PY'\nimport socket,sys\ntry:\n s=socket.create_connection(('db',3306),timeout=1); s.close(); print('ok'); sys.exit(0)\nexcept Exception:\n sys.exit(1)\nPY" 2>/dev/null; then
+      echo "[setup_db] TCP check succeeded, waiting extra 3s for full initialization..."
+      sleep 3
       echo "[setup_db] DB is available (tcp check from backend succeeded)"
       return 0
     fi
@@ -126,9 +133,12 @@ if [ "$DO_ALEMBIC" = true ]; then
   }
 fi
 
-if [ "$DO_POPULATE" = true ]; then
-  echo "[setup_db] Populating database: python src/database/popule.py"
-  docker compose exec backend python src/database/popule.py
+if [ "$DO_INIT" = true ]; then
+  echo "[setup_db] Initializing database with UECE and courses..."
+  echo "[setup_db] Creating UECE university..."
+  docker compose exec backend python scripts/insert_uece.py
+  echo "[setup_db] Creating UECE courses..."
+  docker compose exec backend python scripts/insert_uece_courses.py
 fi
 
 echo "[setup_db] Done."
