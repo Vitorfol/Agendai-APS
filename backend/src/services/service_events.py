@@ -230,7 +230,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
         - "semanal": mesma data do dia da semana do início
     """
 
-    if evento.data_inicio > evento.data_termino:
+    if evento.data_inicio > evento.data_termino and evento.recorrencia != "unico":
         raise HTTPException(
             status_code=500,
             detail="Inconsistência detectada: data_inicio > data_termino."
