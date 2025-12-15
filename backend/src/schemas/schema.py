@@ -96,7 +96,6 @@ class EventoBase(BaseModel):
     local_padrao: Optional[str] = None
     recorrencia: Optional[str] = None
     categoria: Optional[str] = None
-    email_proprietario: Optional[str] = None # ID do Usuário dono
 
 class EventoCreate(EventoBase):
     pass

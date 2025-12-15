@@ -4,14 +4,14 @@ from fastapi import HTTPException, status
 from ..models import models # Onde está sua classe Evento
 from sqlalchemy import delete
 from datetime import datetime, timedelta, date
-from ..core.constants import HORARIOS, DIAS_MAP
+from ..core.constants import HORARIOS, DIAS_MAP, NUM_PARA_DIA
 from ..schemas.jwt import TokenPayload
 from ..services.service_notifications import notificar_usuarios_em_massa,criar_notificacao
 
 def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str = None):
 
     # 1. Validar datas
-    if dados.data_termino <= dados.data_inicio:
+    if dados.data_termino <= dados.data_inicio and dados.recorrencia != "unico":
         raise HTTPException(
             status_code=400,
             detail="A data de término deve ser posterior à data de início."
@@ -25,16 +25,16 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
 
     # 2. Validar proprietário (pode ser Usuario ou Universidade)
     usuario = None
-    if dados.email_proprietario is not None:
+    if current_email is not None:
         # Tentar buscar em Usuario primeiro
         usuario = db.query(models.Usuario).filter(
-            models.Usuario.email == dados.email_proprietario
+            models.Usuario.email == current_email
         ).first()
         
         # Se não encontrou em Usuario, tentar em Universidade
         if not usuario:
             universidade = db.query(models.Universidade).filter(
-                models.Universidade.email == dados.email_proprietario
+                models.Universidade.email == current_email
             ).first()
             if not universidade:
                 raise HTTPException(status_code=404, detail="Proprietário não encontrado.")
@@ -52,7 +52,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
             horario_termino=dados.horario_termino,
             local_padrao=dados.local_padrao,
             categoria=dados.categoria,
-            email_proprietario=dados.email_proprietario
+            email_proprietario=current_email 
         )
 
         db.add(novo_evento)
@@ -178,7 +178,8 @@ def gerar_ocorrencias_disciplina(db: Session, evento: models.Evento, disciplina:
 
     for dia_str in dias_semana:
         weekday = DIAS_MAP[dia_str]   # agora funciona
-        criar_dias_disciplina(db, evento.id, dia_str)
+        dia_nome = NUM_PARA_DIA[dia_str]
+        criar_dias_disciplina(db, evento.id, dia_nome)
 
         # encontrar a primeira data válida
         dt = data_inicio
@@ -229,7 +230,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
         - "semanal": mesma data do dia da semana do início
     """
 
-    if evento.data_inicio > evento.data_termino:
+    if evento.data_inicio > evento.data_termino and evento.recorrencia != "unico":
         raise HTTPException(
             status_code=500,
             detail="Inconsistência detectada: data_inicio > data_termino."

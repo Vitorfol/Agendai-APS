@@ -31,3 +31,12 @@ DIAS_MAP = {
         "6": 4,  # Sexta
         "7": 5,  # Sábado
     }
+
+NUM_PARA_DIA = {
+    "2": "SEG",
+    "3": "TER",
+    "4": "QUA",
+    "5": "QUI",
+    "6": "SEX",
+    "7": "SAB",
+}
