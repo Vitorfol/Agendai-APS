@@ -139,6 +139,8 @@ if [ "$DO_INIT" = true ]; then
   docker compose exec backend python scripts/insert_uece.py
   echo "[setup_db] Creating UECE courses..."
   docker compose exec backend python scripts/insert_uece_courses.py
+  echo "[setup_db] Creating test users and event base..."
+  docker compose exec backend python scripts/insert_users_event_base.py
 fi
 
 echo "[setup_db] Done."
