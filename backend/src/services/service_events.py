@@ -11,16 +11,23 @@ from ..services.service_notifications import notificar_usuarios_em_massa,criar_n
 def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str = None):
 
     # 1. Validar datas
-    if dados.data_termino <= dados.data_inicio and dados.recorrencia != "unico":
-        raise HTTPException(
-            status_code=400,
-            detail="A data de término deve ser posterior à data de início."
-        )
+    if dados.data_termino < dados.data_inicio:
+            raise HTTPException(
+                status_code=400,
+                detail="A data de término deve ser posterior ou igual à data de início."
+            )
     
-    if dados.horario_termino <= dados.horario_inicio:
+    if dados.horario_inicio is not None and dados.horario_termino is not None:
+        if dados.horario_termino <= dados.horario_inicio:
+            raise HTTPException(
+                status_code=400,
+                detail="O horário de término deve ser posterior ao horário de início."
+            )
+        
+    if current_email.endswith("@aluno.uece.br") and dados.categoria.lower() == "disciplina":
         raise HTTPException(
-            status_code=400,
-            detail="O horário de término deve ser posterior ao horário de início."
+            status_code=403,
+            detail="Usuários alunos não podem criar eventos do tipo Disciplina."
         )
 
     # 2. Validar proprietário (pode ser Usuario ou Universidade)
@@ -59,7 +66,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
         db.flush()  # agora novo_evento.id está disponível
 
         # 4. Criar disciplina se for categoria "Disciplina"
-        if dados.categoria == "Disciplina" and disciplina:
+        if dados.categoria.lower() == "disciplina" and disciplina:
 
             nova_disciplina = criar_disciplina(
                 db=db,
@@ -70,7 +77,7 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
 
             novo_evento.disciplina = nova_disciplina
 
-        if novo_evento.categoria != "Disciplina":
+        if novo_evento.categoria.lower() != "disciplina":
             # Gerar ocorrências para eventos que não são disciplinas
             gerar_ocorrencias_evento(db, novo_evento)
         else:
@@ -242,7 +249,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     ocorrencias = []
 
     # Evento único
-    if evento.recorrencia == "unico":
+    if evento.recorrencia.lower() == "unico":
         ocorrencia = models.OcorrenciaEvento(
             id_evento=evento.id,
             data=evento.data_inicio,
@@ -257,7 +264,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     # Evento recorrente
     data_atual = evento.data_inicio
 
-    if evento.recorrencia == "diario":
+    if evento.recorrencia.lower() == "diario":
         delta = timedelta(days=1)
         while data_atual <= evento.data_termino:
             ocorrencia = models.OcorrenciaEvento(
@@ -272,7 +279,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
             ocorrencias.append(ocorrencia)
             data_atual += delta
 
-    elif evento.recorrencia == "diario_uteis":
+    elif evento.recorrencia.lower() == "diario_uteis":
         while data_atual <= evento.data_termino:
             if data_atual.weekday() < 5:  # 0=segunda, 4=sexta
                 ocorrencia = models.OcorrenciaEvento(
@@ -286,7 +293,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
                 ocorrencias.append(ocorrencia)
             data_atual += timedelta(days=1)
 
-    elif evento.recorrencia == "semanal":
+    elif evento.recorrencia.lower() == "semanal":
         weekday_inicial = data_atual.weekday()
         while data_atual <= evento.data_termino:
             if data_atual.weekday() == weekday_inicial:
