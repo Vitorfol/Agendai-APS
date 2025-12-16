@@ -81,6 +81,23 @@ class UsuarioResponse(UsuarioBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+# ==========================================
+# RECUPERAÇÃO DE SENHA
+# ==========================================
+class RequestPasswordResetSchema(BaseModel):
+    """Schema para solicitar recuperação de senha."""
+    email: EmailStr = Field(..., description="Email cadastrado no sistema")
+
+class ValidateResetCodeSchema(BaseModel):
+    """Schema para validar código de recuperação."""
+    code: str = Field(..., min_length=6, max_length=6, description="Código de 6 dígitos recebido por email")
+
+class ResetPasswordSchema(BaseModel):
+    """Schema para redefinir senha."""
+    new_password: str = Field(..., min_length=6, description="Nova senha (mínimo 6 caracteres)")
+    confirm_password: str = Field(..., min_length=6, description="Confirmação da nova senha")
+
+
 
 # ==========================================
 # EVENTO

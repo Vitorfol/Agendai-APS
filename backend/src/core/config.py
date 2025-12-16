@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     DATABASE_PORT: int
     DATABASE_NAME: str
 
+    # SMTP Configuration
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env"
         # O padrão 'extra='forbid'' está OK se todos os campos estão declarados.
