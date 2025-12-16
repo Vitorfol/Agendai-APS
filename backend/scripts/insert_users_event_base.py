@@ -102,7 +102,7 @@ def main():
             "horario_termino": "11:10:00",
             "local_padrao": "Sala 101",
             "recorrencia": "semanal",
-            "categoria": "Disciplina"
+            "categoria": "disciplina"
         },
         "disciplina": {
             "horario": "35-CD-manha",
