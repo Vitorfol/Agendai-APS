@@ -689,7 +689,7 @@ def atualizar_ocorrencia_evento_por_data(
     
     if payload.data is not None:
         # Validar que a nova data está dentro do intervalo do evento
-        if payload.data < evento.data_inicio or payload.data > evento.data_termino and evento.recorrencia.lower() != "unico":
+        if (payload.data < evento.data_inicio or payload.data > evento.data_termino) and evento.recorrencia.lower() != "unico":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A nova data deve estar dentro do intervalo do evento."
