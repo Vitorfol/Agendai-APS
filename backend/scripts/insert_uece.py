@@ -8,7 +8,11 @@ uma Universidade.
 """
 import sys
 import os
+import logging
 from datetime import datetime
+
+# Silenciar logs do SQLAlchemy
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
@@ -29,7 +33,7 @@ def insert_uece():
         "cnpj": "12345678000195",
         "email": "contato@uece.br",
         # plain password here will be hashed before saving
-        "senha": "dedelbrabo",
+        "senha": "uece12345",
     }
 
     try:
