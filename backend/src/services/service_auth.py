@@ -7,8 +7,166 @@ from ..schemas import schema
 from ..models import models
 from ..core import security # Importa seu arquivo com passlib
 from ..schemas.jwt import Token, TokenPayload
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import random
+import string
+from datetime import datetime, timedelta
+import uuid
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+
+
+# Store reset codes by code -> { email, expires_at, attempts }
+reset_codes = {}
+# Temporary recovery tokens by token -> { email, expires_at }
+recovery_tokens = {}
+
+# ----------------------------------------------------------------------
+# ENVIAR EMAIL DE BOAS-VINDAS (PORTUGUÊS)
+# ----------------------------------------------------------------------
+def send_welcome_email(email: str, name: str, role: str):
+    """Envia um email de boas-vindas simples."""
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = settings.SMTP_USER
+        msg['To'] = email
+        msg['Subject'] = "Bem-vindo ao Agendai "
+
+        role_pt = "professor" if role == "professor" else "aluno"
+        
+        body = f"""Olá {name},
+
+Bem-vindo ao Agendai APS! Sua conta de {role_pt} foi criada com sucesso.
+
+Você já pode fazer login no sistema.
+
+Atenciosamente,
+Equipe Agendai """
+        
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+        server.starttls()
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        # Log e continua; não interrompe a criação do usuário
+        print(f"Erro ao enviar email de boas-vindas: {e}")
+
+# ----------------------------------------------------------------------
+# RECUPERAÇÃO DE SENHA (PORTUGUÊS)
+# ----------------------------------------------------------------------
+def request_password_reset(db: Session, email: str):
+    """Gera um código de 6 dígitos e envia para o email do usuário."""
+    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Email não cadastrado.")
+
+    code = ''.join(random.choices(string.digits, k=6))
+    expires = datetime.utcnow() + timedelta(minutes=15)
+
+    # Salva pelo código para que o cliente envie apenas o código no passo 2
+    reset_codes[code] = {"email": email, "expires_at": expires, "attempts": 0}
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = settings.SMTP_USER
+        msg['To'] = email
+        msg['Subject'] = "Código de Recuperação de Senha - Agendai "
+
+        body = f"""Olá {user.nome},
+
+Você solicitou a recuperação de senha para o Agendai APS.
+
+Seu código de recuperação é: {code}
+
+Este código expira em 15 minutos.
+
+Se você não solicitou esta recuperação, por favor ignore este email.
+
+Atenciosamente,
+Equipe Agendai """
+        
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+        server.starttls()
+        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+
+        return {"message": "Código de recuperação enviado para seu email."}
+    except Exception as e:
+        print(f"Erro ao enviar email de recuperação: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Falha ao enviar email.")
+
+def validate_reset_code(code: str):
+    """
+    Valida o código de 6 dígitos.
+    Entrada: apenas `code` (sem email).
+    Em caso de sucesso retorna um token de recuperação temporário (use-o para definir a nova senha).
+    """
+    if code not in reset_codes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Não há solicitação de recuperação ativa para este código.")
+
+    record = reset_codes[code]
+
+    if datetime.utcnow() > record["expires_at"]:
+        del reset_codes[code]
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Código expirado.")
+
+    if record["attempts"] >= 3:
+        del reset_codes[code]
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Muitas tentativas. Solicite um novo código.")
+
+    # Código válido: emite um token de recuperação único e remove/reseta o código
+    token = str(uuid.uuid4())
+    recovery_tokens[token] = {"email": record["email"], "expires_at": datetime.utcnow() + timedelta(minutes=15)}
+
+    # Remove o código usado para evitar reutilização
+    del reset_codes[code]
+
+    return {"recovery_token": token, "message": "Código validado. Use o token de recuperação para redefinir sua senha."}
+
+def reset_password_with_token(db: Session, recovery_token: str, new_password: str, confirm_password: str):
+    """
+    Redefine a senha do usuário usando um token de recuperação único.
+    Cliente deve enviar o token retornado por validate_reset_code.
+    """
+    # Valida se as senhas coincidem
+    if new_password != confirm_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="As senhas não coincidem.")
+    
+    # Valida tamanho mínimo da senha
+    if len(new_password) < 6:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A senha deve ter no mínimo 6 caracteres.")
+    
+    if recovery_token not in recovery_tokens:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token de recuperação inválido ou expirado.")
+
+    rec = recovery_tokens[recovery_token]
+    if datetime.utcnow() > rec["expires_at"]:
+        del recovery_tokens[recovery_token]
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Token de recuperação expirado.")
+
+    email = rec["email"]
+    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+    if not user:
+        del recovery_tokens[recovery_token]
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado.")
+
+    try:
+        hashed = security.pegar_senha_hash(new_password)
+        user.senha = hashed
+        db.commit()
+        del recovery_tokens[recovery_token]
+        return {"message": "Senha atualizada com sucesso."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Falha ao redefinir senha: {str(e)}")
 
 # ----------------------------------------------------------------------
 # FUNÇÕES AUXILIARES DE BUSCA
