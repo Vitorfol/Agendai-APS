@@ -249,7 +249,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     ocorrencias = []
 
     # Evento único
-    if evento.recorrencia == "unico":
+    if evento.recorrencia.lower() == "unico":
         ocorrencia = models.OcorrenciaEvento(
             id_evento=evento.id,
             data=evento.data_inicio,
@@ -264,7 +264,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
     # Evento recorrente
     data_atual = evento.data_inicio
 
-    if evento.recorrencia == "diario":
+    if evento.recorrencia.lower() == "diario":
         delta = timedelta(days=1)
         while data_atual <= evento.data_termino:
             ocorrencia = models.OcorrenciaEvento(
@@ -279,7 +279,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
             ocorrencias.append(ocorrencia)
             data_atual += delta
 
-    elif evento.recorrencia == "diario_uteis":
+    elif evento.recorrencia.lower() == "diario_uteis":
         while data_atual <= evento.data_termino:
             if data_atual.weekday() < 5:  # 0=segunda, 4=sexta
                 ocorrencia = models.OcorrenciaEvento(
@@ -293,7 +293,7 @@ def gerar_ocorrencias_evento(db: Session, evento: models.Evento):
                 ocorrencias.append(ocorrencia)
             data_atual += timedelta(days=1)
 
-    elif evento.recorrencia == "semanal":
+    elif evento.recorrencia.lower() == "semanal":
         weekday_inicial = data_atual.weekday()
         while data_atual <= evento.data_termino:
             if data_atual.weekday() == weekday_inicial:
