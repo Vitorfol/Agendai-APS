@@ -96,7 +96,7 @@ class EventoBase(BaseModel):
     local_padrao: Optional[str] = None
     recorrencia: Optional[str] = None
     categoria: Optional[str] = None
-
+    
 class EventoCreate(EventoBase):
     pass
 

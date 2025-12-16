@@ -87,11 +87,12 @@ def criar_evento_logica(db: Session, dados, disciplina=None, current_email: str 
         db.commit()
         db.refresh(novo_evento)  
         # Notificar o proprietário do evento (se houver usuário identificado)
+        '''
         mandar_noticacao_proprietario_evento(db=db, novo_evento=novo_evento, usuario=usuario, 
         mensagem=f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}")   
         mandar_notificacao_evento_usuario_atual(db=db, novo_evento=novo_evento, current_email=current_email,
         mensagem=f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}")
-    
+        '''
         return novo_evento
 
     except Exception as e:
@@ -126,6 +127,7 @@ def mandar_notificacao_evento_usuario_atual(db: Session, novo_evento:models.Even
                 if usuario_token:
                     #mensagem_token = f"Seu evento '{novo_evento.nome}' foi criado para {novo_evento.data_inicio.strftime('%d/%m/%Y às %H:%M')}"
                     # não deixar falha na notificação interromper a criação do evento
+                    '''
                     try:
                         notificar_usuarios_em_massa(
                             db=db,
@@ -135,6 +137,7 @@ def mandar_notificacao_evento_usuario_atual(db: Session, novo_evento:models.Even
                         )
                     except Exception:
                             pass
+                    '''
     except Exception:
         pass
     
@@ -454,12 +457,12 @@ def deletar_evento(db: Session, id_evento: int, current_email:str = None):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Evento não encontrado."
         )
-    
+    '''
     mandar_noticacao_proprietario_evento(db=db, novo_evento=evento, usuario=evento, 
     mensagem=f"O evento '{evento.nome}' foi cancelado!")   
     mandar_notificacao_evento_usuario_atual(db=db, novo_evento=evento, current_email=current_email,
     mensagem=f"O evento '{evento.nome}' foi cancelado!")
-
+    '''
 
     # 2. Remover PRESENÇAS das ocorrências desse evento
     db.query(models.Presenca).filter(
@@ -740,7 +743,9 @@ def atualizar_ocorrencia_evento_por_data(
     
     # 8. Verificar se o usuário atual é o proprietário
     is_proprietario = evento.email_proprietario == current_user_email
+    '''
     mandar_notificacao_evento_usuario_atual(db=db,novo_evento=evento,current_email=current_user_email, mensagem= f"A Ocorrência do dia {ocorrencia.data} foi atualizada com sucesso!")
+    '''
     # 9. Retornar a ocorrência atualizada formatada
     return montar_informacoes_ocorrencia(ocorrencia, dias_list=dias_list, is_proprietario=is_proprietario)
 
@@ -792,10 +797,10 @@ def cancelar_ocorrencia_evento_por_data(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao cancelar ocorrência: {str(e)}"
         )
-    
+    '''
     mandar_notificacao_evento_usuario_atual(db=db, novo_evento=evento, current_email=current_user_email,
     mensagem=f"A Ocorrencia do dia {ocorrencia.data} foi cancelada!")
-    
+    '''
     return {"message": "Ocorrência cancelada com sucesso."}
 
 
@@ -959,12 +964,13 @@ def adicionar_participante_evento(
                 })
 
                 
-
+        '''
         notificar_usuarios_em_massa(db=db,
                                     id_usuarios= [adicionado.id_usuario for adicionado in adicionados],
                                     mensagem= f"Você foi convidado para o evento: {evento.nome}.")
         mandar_notificacao_evento_usuario_atual(db=db, novo_evento=evento, current_email=current_user_email,
                                     mensagem=f"{len(adicionados)} participante(s) adicionado(s) com sucesso.\ntotal adicionados: {len(adicionados)},\ntotal já existentes: {len(ja_convidados)}.")
+        '''
         return {
             "message": f"{len(adicionados)} participante(s) adicionado(s) com sucesso.",
             "total_adicionados": len(adicionados),
@@ -1053,7 +1059,7 @@ def remover_participante_evento(
     try:
         db.delete(convidado)
         db.commit()
-
+        '''
         criar_notificacao(db=db,dados= models.Notificacao(
                 id_usuario = convidado.id_usuario,
                 data = datetime.now(),
@@ -1063,7 +1069,7 @@ def remover_participante_evento(
         )
 
         mandar_notificacao_evento_usuario_atual(db=db,novo_evento=evento,current_email=current_user_email,mensagem= f"O convidado {usuario_convidado.nome} foi removido do evento com sucesso!")
-        
+        '''
         return {"message": "Participante removido com sucesso."}
     
     except Exception as e:
